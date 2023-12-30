@@ -1,0 +1,278 @@
+Archive member included to satisfy reference by file (symbol)
+
+/opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+                              out/NVIC_Drivers.o (__cxa_guard_acquire)
+/opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a(lib_a-memcpy-stub.o)
+                              out/UART_Driver.o (memcpy)
+
+Discarded input sections
+
+ .group         0x0000000000000000        0x8 out/UART_Driver.o
+ .group         0x0000000000000000        0x8 out/main.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x0000000008000000 0x0000000000080000 xr
+SRAM             0x0000000020000000 0x0000000000018000 xrw
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD out/SysTick.o
+LOAD out/stm32_startup.o
+LOAD out/Clock_Driver.o
+LOAD out/NVIC_Drivers.o
+LOAD out/UART_Driver.o
+LOAD out/GPIO_Driver.o
+LOAD out/main.o
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libm.a
+START GROUP
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/libgcc.a
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a
+END GROUP
+START GROUP
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/libgcc.a
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libnosys.a
+END GROUP
+START GROUP
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/libgcc.a
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a
+LOAD /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libnosys.a
+END GROUP
+
+.isr_vector     0x0000000008000000      0x188
+                0x0000000008000000                . = ALIGN (0x4)
+ *(.isr_vector)
+ .isr_vector    0x0000000008000000      0x188 out/stm32_startup.o
+                0x0000000008000000                vector_table
+                0x0000000008000188                . = ALIGN (0x4)
+
+.text           0x0000000008000188      0xab0
+                0x0000000008000188                . = ALIGN (0x4)
+ *(.text*)
+ .text          0x0000000008000188        0x0 out/SysTick.o
+ .text          0x0000000008000188       0x88 out/stm32_startup.o
+                0x0000000008000188                init_ram()
+                0x00000000080001ec                Reset_Handler()
+ .text          0x0000000008000210       0x38 out/Clock_Driver.o
+                0x0000000008000210                Clock::EnableClock_USART2()
+                0x000000000800022c                Clock::EnableClock_GPIOA()
+ .text          0x0000000008000248      0x240 out/NVIC_Drivers.o
+                0x0000000008000248                NVIC::get_instance()
+                0x0000000008000294                NVIC::NVIC_EnableInterrupt(unsigned char)
+                0x00000000080002d8                NVIC::NVIC_DisableInterrupt(unsigned char)
+                0x000000000800031c                NVIC::NVIC_SetInterruptPending(unsigned char)
+                0x0000000008000360                NVIC::NVIC_ClearInterruptPending(unsigned char)
+                0x00000000080003a4                NVIC::NVIC_GetInterruptPendingStatus(unsigned char)
+                0x00000000080003e8                NVIC::NVIC_SetInterruptPriority(unsigned char, unsigned char)
+                0x0000000008000440                NVIC::NVIC_GetInterruptPriority(unsigned char)
+ .text          0x0000000008000488      0x52c out/UART_Driver.o
+                0x0000000008000488                USART::Config(USART_word_length_t, USART_parity_t, unsigned long, USART_num_stop_bits_t)
+                0x00000000080004c4                USART::ConfigBaudRate(unsigned long)
+                0x00000000080005d4                USART::Init()
+                0x0000000008000728                USART::Print(char const*, unsigned long, unsigned long)
+                0x0000000008000854                USART::PrintIT(char const*, unsigned long, unsigned long)
+                0x000000000800095c                USART2_Interrupt()
+ .text._ZN4GPIOC2EP16GPIO_registers_t10GPIO_pin_t
+                0x00000000080009b4       0x2c out/UART_Driver.o
+                0x00000000080009b4                GPIO::GPIO(GPIO_registers_t*, GPIO_pin_t)
+                0x00000000080009b4                GPIO::GPIO(GPIO_registers_t*, GPIO_pin_t)
+ .text          0x00000000080009e0      0x120 out/GPIO_Driver.o
+                0x00000000080009e0                GPIO::Config(GPIO_port_mode_t, GPIO_port_output_config_t, GPIO_port_speed_t, GPIO_port_pull_t, GPIO_port_alternatefunction_t)
+                0x0000000008000a22                GPIO::Init()
+ .text          0x0000000008000b00       0x8c out/main.o
+                0x0000000008000b00                main
+ .text._ZN5USARTC2EP17USART_Registers_t
+                0x0000000008000b8c       0x42 out/main.o
+                0x0000000008000b8c                USART::USART(USART_Registers_t*)
+                0x0000000008000b8c                USART::USART(USART_Registers_t*)
+ .text          0x0000000008000bce        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+ *fill*         0x0000000008000bce        0x2 
+ .text.__cxa_guard_acquire
+                0x0000000008000bd0       0x34 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+                0x0000000008000bd0                __cxa_guard_acquire
+ .text.__cxa_guard_abort
+                0x0000000008000c04        0xc /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+                0x0000000008000c04                __cxa_guard_abort
+ .text.__cxa_guard_release
+                0x0000000008000c10        0xc /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+                0x0000000008000c10                __cxa_guard_release
+ .text          0x0000000008000c1c        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a(lib_a-memcpy-stub.o)
+ .text.memcpy   0x0000000008000c1c       0x1c /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a(lib_a-memcpy-stub.o)
+                0x0000000008000c1c                memcpy
+                0x0000000008000c38                . = ALIGN (0x4)
+
+.glue_7         0x0000000008000c38        0x0
+ .glue_7        0x0000000008000c38        0x0 linker stubs
+
+.glue_7t        0x0000000008000c38        0x0
+ .glue_7t       0x0000000008000c38        0x0 linker stubs
+
+.vfp11_veneer   0x0000000008000c38        0x0
+ .vfp11_veneer  0x0000000008000c38        0x0 linker stubs
+
+.v4_bx          0x0000000008000c38        0x0
+ .v4_bx         0x0000000008000c38        0x0 linker stubs
+
+.iplt           0x0000000008000c38        0x0
+ .iplt          0x0000000008000c38        0x0 out/stm32_startup.o
+
+.data           0x0000000020000000       0x1c load address 0x0000000008000c38
+                0x0000000020000000                . = ALIGN (0x4)
+ *(.data*)
+ .data          0x0000000020000000        0x0 out/SysTick.o
+ .data          0x0000000020000000        0x0 out/stm32_startup.o
+ .data          0x0000000020000000        0x0 out/Clock_Driver.o
+ .data          0x0000000020000000       0x1c out/NVIC_Drivers.o
+                0x0000000020000000                NVIC::registers
+ .data          0x000000002000001c        0x0 out/UART_Driver.o
+ .data          0x000000002000001c        0x0 out/GPIO_Driver.o
+ .data          0x000000002000001c        0x0 out/main.o
+ .data          0x000000002000001c        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+ .data          0x000000002000001c        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a(lib_a-memcpy-stub.o)
+                0x000000002000001c                . = ALIGN (0x4)
+
+.igot.plt       0x000000002000001c        0x0 load address 0x0000000008000c54
+ .igot.plt      0x000000002000001c        0x0 out/stm32_startup.o
+
+.rodata         0x0000000008000c54      0x178
+                0x0000000008000c54                . = ALIGN (0x4)
+ *(.rodata*)
+ .rodata        0x0000000008000c54       0x3c out/Clock_Driver.o
+                0x0000000008000c8c                Clock::registers
+ .rodata        0x0000000008000c90       0x26 out/NVIC_Drivers.o
+ *fill*         0x0000000008000cb6        0x2 
+ .rodata        0x0000000008000cb8       0x8c out/UART_Driver.o
+ .rodata        0x0000000008000d44       0x38 out/GPIO_Driver.o
+ .rodata        0x0000000008000d7c       0x4d out/main.o
+                0x0000000008000dcc                . = ALIGN (0x4)
+ *fill*         0x0000000008000dc9        0x3 
+
+.rel.dyn        0x0000000008000dcc        0x0
+ .rel.iplt      0x0000000008000dcc        0x0 out/stm32_startup.o
+
+.bss            0x000000002000001c      0x61c
+                0x000000002000001c                . = ALIGN (0x4)
+                0x000000002000001c                _bss_start = .
+ *(.bss*)
+ .bss           0x000000002000001c        0x0 out/SysTick.o
+ .bss           0x000000002000001c        0x4 out/stm32_startup.o
+                0x000000002000001c                bss_size
+ .bss           0x0000000020000020        0x4 out/Clock_Driver.o
+                0x0000000020000020                globalTime
+ .bss           0x0000000020000024        0x8 out/NVIC_Drivers.o
+ .bss           0x000000002000002c      0x60c out/UART_Driver.o
+                0x000000002000002c                USART::USART1_MessageStr
+                0x0000000020000230                USART::USART2_MessageStr
+                0x0000000020000434                USART::USART6_MessageStr
+ .bss           0x0000000020000638        0x0 out/GPIO_Driver.o
+ .bss           0x0000000020000638        0x0 out/main.o
+ .bss           0x0000000020000638        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+ .bss           0x0000000020000638        0x0 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a(lib_a-memcpy-stub.o)
+                0x0000000020000638                _bss_end = .
+                0x0000000020000638                end = _bss_end
+                0x0000000020000638                . = ALIGN (0x4)
+OUTPUT(bin/bootloader.elf elf32-littlearm)
+LOAD linker stubs
+
+.debug_line     0x0000000000000000     0x104e
+ .debug_line    0x0000000000000000        0x0 out/SysTick.o
+ .debug_line    0x0000000000000000      0x134 out/stm32_startup.o
+ .debug_line    0x0000000000000134      0x12e out/Clock_Driver.o
+ .debug_line    0x0000000000000262      0x1d0 out/NVIC_Drivers.o
+ .debug_line    0x0000000000000432      0x5e5 out/UART_Driver.o
+ .debug_line    0x0000000000000a17      0x362 out/GPIO_Driver.o
+ .debug_line    0x0000000000000d79      0x2d5 out/main.o
+
+.debug_str      0x0000000000000000     0x11b8
+ .debug_str     0x0000000000000000       0xb2 out/SysTick.o
+ .debug_str     0x00000000000000b2       0xea out/stm32_startup.o
+                                        0x1d1 (size before relaxing)
+ .debug_str     0x000000000000019c      0x389 out/Clock_Driver.o
+                                        0x50a (size before relaxing)
+ .debug_str     0x0000000000000525      0x3aa out/NVIC_Drivers.o
+                                        0x51a (size before relaxing)
+ .debug_str     0x00000000000008cf      0x882 out/UART_Driver.o
+                                        0xea1 (size before relaxing)
+ .debug_str     0x0000000000001151       0x14 out/GPIO_Driver.o
+                                        0x7d0 (size before relaxing)
+ .debug_str     0x0000000000001165       0x53 out/main.o
+                                        0x6c1 (size before relaxing)
+
+.comment        0x0000000000000000       0x49
+ .comment       0x0000000000000000       0x49 out/SysTick.o
+                                         0x4a (size before relaxing)
+ .comment       0x0000000000000049       0x4a out/stm32_startup.o
+ .comment       0x0000000000000049       0x4a out/Clock_Driver.o
+ .comment       0x0000000000000049       0x4a out/NVIC_Drivers.o
+ .comment       0x0000000000000049       0x4a out/UART_Driver.o
+ .comment       0x0000000000000049       0x4a out/GPIO_Driver.o
+ .comment       0x0000000000000049       0x4a out/main.o
+
+.ARM.attributes
+                0x0000000000000000       0x30
+ .ARM.attributes
+                0x0000000000000000       0x2e out/SysTick.o
+ .ARM.attributes
+                0x000000000000002e       0x2e out/stm32_startup.o
+ .ARM.attributes
+                0x000000000000005c       0x2e out/Clock_Driver.o
+ .ARM.attributes
+                0x000000000000008a       0x2e out/NVIC_Drivers.o
+ .ARM.attributes
+                0x00000000000000b8       0x2e out/UART_Driver.o
+ .ARM.attributes
+                0x00000000000000e6       0x2e out/GPIO_Driver.o
+ .ARM.attributes
+                0x0000000000000114       0x2e out/main.o
+ .ARM.attributes
+                0x0000000000000142       0x2a /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+ .ARM.attributes
+                0x000000000000016c       0x2a /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a(lib_a-memcpy-stub.o)
+
+.debug_info     0x0000000000000000     0x2cc1
+ .debug_info    0x0000000000000000      0x15d out/stm32_startup.o
+ .debug_info    0x000000000000015d      0x4e4 out/Clock_Driver.o
+ .debug_info    0x0000000000000641      0x558 out/NVIC_Drivers.o
+ .debug_info    0x0000000000000b99     0x1132 out/UART_Driver.o
+ .debug_info    0x0000000000001ccb      0x8f0 out/GPIO_Driver.o
+ .debug_info    0x00000000000025bb      0x706 out/main.o
+
+.debug_abbrev   0x0000000000000000      0xba1
+ .debug_abbrev  0x0000000000000000       0xd4 out/stm32_startup.o
+ .debug_abbrev  0x00000000000000d4      0x15d out/Clock_Driver.o
+ .debug_abbrev  0x0000000000000231      0x1be out/NVIC_Drivers.o
+ .debug_abbrev  0x00000000000003ef      0x349 out/UART_Driver.o
+ .debug_abbrev  0x0000000000000738      0x23d out/GPIO_Driver.o
+ .debug_abbrev  0x0000000000000975      0x22c out/main.o
+
+.debug_aranges  0x0000000000000000       0xd0
+ .debug_aranges
+                0x0000000000000000       0x20 out/stm32_startup.o
+ .debug_aranges
+                0x0000000000000020       0x20 out/Clock_Driver.o
+ .debug_aranges
+                0x0000000000000040       0x20 out/NVIC_Drivers.o
+ .debug_aranges
+                0x0000000000000060       0x28 out/UART_Driver.o
+ .debug_aranges
+                0x0000000000000088       0x20 out/GPIO_Driver.o
+ .debug_aranges
+                0x00000000000000a8       0x28 out/main.o
+
+.debug_frame    0x0000000000000000      0x424
+ .debug_frame   0x0000000000000000       0x54 out/stm32_startup.o
+ .debug_frame   0x0000000000000054       0x50 out/Clock_Driver.o
+ .debug_frame   0x00000000000000a4      0x148 out/NVIC_Drivers.o
+ .debug_frame   0x00000000000001ec      0x11c out/UART_Driver.o
+ .debug_frame   0x0000000000000308       0x5c out/GPIO_Driver.o
+ .debug_frame   0x0000000000000364       0x60 out/main.o
+ .debug_frame   0x00000000000003c4       0x40 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libstdc++_nano.a(guard.o)
+ .debug_frame   0x0000000000000404       0x20 /opt/gcc-arm-none-eabi-10.3-2021.10/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/libc_nano.a(lib_a-memcpy-stub.o)
+
+.debug_ranges   0x0000000000000000       0x30
+ .debug_ranges  0x0000000000000000       0x18 out/UART_Driver.o
+ .debug_ranges  0x0000000000000018       0x18 out/main.o

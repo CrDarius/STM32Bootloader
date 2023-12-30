@@ -1,0 +1,33 @@
+
+bootloader.elf:     file format elf32-littlearm
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .isr_vector   00000188  08000000  08000000  00010000  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  1 .text         00000ab0  08000188  08000188  00010188  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .data         0000001c  20000000  08000c38  00020000  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  3 .rodata       00000178  08000c54  08000c54  00020c54  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .bss          0000061c  2000001c  2000001c  0003001c  2**2
+                  ALLOC
+  5 .debug_line   0000104e  00000000  00000000  00020dcc  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  6 .debug_str    000011b8  00000000  00000000  00021e1a  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  7 .comment      00000049  00000000  00000000  00022fd2  2**0
+                  CONTENTS, READONLY
+  8 .ARM.attributes 00000030  00000000  00000000  0002301b  2**0
+                  CONTENTS, READONLY
+  9 .debug_info   00002cc1  00000000  00000000  0002304b  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 10 .debug_abbrev 00000ba1  00000000  00000000  00025d0c  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 11 .debug_aranges 000000d0  00000000  00000000  000268ad  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 12 .debug_frame  00000424  00000000  00000000  00026980  2**2
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 13 .debug_ranges 00000030  00000000  00000000  00026da4  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
