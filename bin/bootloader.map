@@ -45,7 +45,7 @@ END GROUP
                 0x0000000008000000                vector_table
                 0x0000000008000194                . = ALIGN (0x4)
 
-.text           0x0000000008000194      0xb94
+.text           0x0000000008000194      0xc68
                 0x0000000008000194                . = ALIGN (0x4)
  *(.text*)
  .text          0x0000000008000194       0x38 out/Clock_Driver.o
@@ -54,70 +54,67 @@ END GROUP
  .text          0x00000000080001cc      0x120 out/GPIO_Driver.o
                 0x00000000080001cc                GPIO::Config(GPIO_port_mode_t, GPIO_port_output_config_t, GPIO_port_speed_t, GPIO_port_pull_t, GPIO_port_alternatefunction_t)
                 0x000000000800020e                GPIO::Init()
- .text          0x00000000080002ec       0x90 out/main.o
+ .text          0x00000000080002ec       0xcc out/main.o
                 0x00000000080002ec                main
- .text          0x000000000800037c       0x3a out/m_memory.o
-                0x000000000800037c                m_memcpy(void*, void const*, unsigned long)
- *fill*         0x00000000080003b6        0x2 
- .text          0x00000000080003b8      0x21c out/NVIC_Drivers.o
-                0x00000000080003b8                NVIC::NVIC_EnableInterrupt(unsigned char)
-                0x00000000080003f8                NVIC::NVIC_DisableInterrupt(unsigned char)
-                0x000000000800043c                NVIC::NVIC_SetInterruptPending(unsigned char)
-                0x0000000008000480                NVIC::NVIC_ClearInterruptPending(unsigned char)
-                0x00000000080004c4                NVIC::NVIC_GetInterruptPendingStatus(unsigned char)
-                0x0000000008000504                NVIC::NVIC_SetInterruptPriority(unsigned char, unsigned char)
-                0x000000000800054c                NVIC::NVIC_GetInterruptPriority(unsigned char)
-                0x0000000008000588                EnableAllInterrupts()
-                0x000000000800059e                DisableAllInterrupts()
-                0x00000000080005b4                SetBasePriority(unsigned long)
- .text          0x00000000080005d4       0xd8 out/stm32_startup.o
-                0x00000000080005d4                init_ram()
-                0x0000000008000658                call_ctors()
-                0x0000000008000698                Reset_Handler()
- .text          0x00000000080006ac        0x0 out/SysTick.o
- .text          0x00000000080006ac      0x60c out/UART_Driver.o
-                0x00000000080006ac                USART::Config(USART_word_length_t, USART_parity_t, unsigned long, USART_num_stop_bits_t)
-                0x00000000080006e8                USART::ConfigBaudRate(unsigned long)
-                0x00000000080007f8                USART::Init()
-                0x000000000800094c                USART::Print(char const*, unsigned long, unsigned long)
-                0x0000000008000a78                USART::PrintIT(char const*, unsigned long, unsigned long)
-                0x0000000008000b84                USART::Read(char*, unsigned long, unsigned long)
-                0x0000000008000b9e                USART::ReadIT(char*, unsigned long, unsigned long)
-                0x0000000008000bb8                USART2_Interrupt()
-                0x0000000008000c30                USART1_RxInterruptCallback()
-                0x0000000008000c3c                USART2_RxInterruptCallback()
-                0x0000000008000c48                USART6_RxInterruptCallback()
+ .text          0x00000000080003b8       0x3a out/m_memory.o
+                0x00000000080003b8                m_memcpy(void*, void const*, unsigned long)
+ *fill*         0x00000000080003f2        0x2 
+ .text          0x00000000080003f4      0x21c out/NVIC_Drivers.o
+                0x00000000080003f4                NVIC::NVIC_EnableInterrupt(unsigned char)
+                0x0000000008000434                NVIC::NVIC_DisableInterrupt(unsigned char)
+                0x0000000008000478                NVIC::NVIC_SetInterruptPending(unsigned char)
+                0x00000000080004bc                NVIC::NVIC_ClearInterruptPending(unsigned char)
+                0x0000000008000500                NVIC::NVIC_GetInterruptPendingStatus(unsigned char)
+                0x0000000008000540                NVIC::NVIC_SetInterruptPriority(unsigned char, unsigned char)
+                0x0000000008000588                NVIC::NVIC_GetInterruptPriority(unsigned char)
+                0x00000000080005c4                EnableAllInterrupts()
+                0x00000000080005da                DisableAllInterrupts()
+                0x00000000080005f0                SetBasePriority(unsigned long)
+ .text          0x0000000008000610       0xd8 out/stm32_startup.o
+                0x0000000008000610                init_ram()
+                0x0000000008000694                call_ctors()
+                0x00000000080006d4                Reset_Handler()
+ .text          0x00000000080006e8        0x0 out/SysTick.o
+ .text          0x00000000080006e8      0x698 out/UART_Driver.o
+                0x00000000080006e8                USART::Config(USART_word_length_t, USART_parity_t, unsigned long, USART_num_stop_bits_t, bool, void (*)(unsigned char*, unsigned long))
+                0x0000000008000732                USART::ConfigBaudRate(unsigned long)
+                0x0000000008000840                USART::Init()
+                0x0000000008000994                USART::Print(char const*, unsigned long, unsigned long)
+                0x0000000008000ac0                USART::Read(unsigned char*, unsigned long, unsigned long)
+                0x0000000008000b80                USART::PrintIT(char const*, unsigned long, unsigned long)
+                0x0000000008000c8c                USART::ReadIT(unsigned char*, unsigned long, unsigned long)
+                0x0000000008000ca6                USART2_Interrupt()
  .text._ZN4GPIOC2EP16GPIO_registers_t10GPIO_pin_t
-                0x0000000008000cb8       0x2c out/UART_Driver.o
-                0x0000000008000cb8                GPIO::GPIO(GPIO_registers_t*, GPIO_pin_t)
-                0x0000000008000cb8                GPIO::GPIO(GPIO_registers_t*, GPIO_pin_t)
+                0x0000000008000d80       0x2c out/UART_Driver.o
+                0x0000000008000d80                GPIO::GPIO(GPIO_registers_t*, GPIO_pin_t)
+                0x0000000008000d80                GPIO::GPIO(GPIO_registers_t*, GPIO_pin_t)
  .text._ZN5USARTC2EP17USART_Registers_t
-                0x0000000008000ce4       0x42 out/UART_Driver.o
-                0x0000000008000ce4                USART::USART(USART_Registers_t*)
-                0x0000000008000ce4                USART::USART(USART_Registers_t*)
-                0x0000000008000d28                . = ALIGN (0x4)
- *fill*         0x0000000008000d26        0x2 
-                0x0000000008000d28                _text_end = .
+                0x0000000008000dac       0x4e out/UART_Driver.o
+                0x0000000008000dac                USART::USART(USART_Registers_t*)
+                0x0000000008000dac                USART::USART(USART_Registers_t*)
+                0x0000000008000dfc                . = ALIGN (0x4)
+ *fill*         0x0000000008000dfa        0x2 
+                0x0000000008000dfc                _text_end = .
 
-.glue_7         0x0000000008000d28        0x0
- .glue_7        0x0000000008000d28        0x0 linker stubs
+.glue_7         0x0000000008000dfc        0x0
+ .glue_7        0x0000000008000dfc        0x0 linker stubs
 
-.glue_7t        0x0000000008000d28        0x0
- .glue_7t       0x0000000008000d28        0x0 linker stubs
+.glue_7t        0x0000000008000dfc        0x0
+ .glue_7t       0x0000000008000dfc        0x0 linker stubs
 
-.vfp11_veneer   0x0000000008000d28        0x0
- .vfp11_veneer  0x0000000008000d28        0x0 linker stubs
+.vfp11_veneer   0x0000000008000dfc        0x0
+ .vfp11_veneer  0x0000000008000dfc        0x0 linker stubs
 
-.v4_bx          0x0000000008000d28        0x0
- .v4_bx         0x0000000008000d28        0x0 linker stubs
+.v4_bx          0x0000000008000dfc        0x0
+ .v4_bx         0x0000000008000dfc        0x0 linker stubs
 
-.iplt           0x0000000008000d28        0x0
- .iplt          0x0000000008000d28        0x0 out/GPIO_Driver.o
+.iplt           0x0000000008000dfc        0x0
+ .iplt          0x0000000008000dfc        0x0 out/GPIO_Driver.o
 
-.rel.dyn        0x0000000008000d28        0x0
- .rel.iplt      0x0000000008000d28        0x0 out/GPIO_Driver.o
+.rel.dyn        0x0000000008000dfc        0x0
+ .rel.iplt      0x0000000008000dfc        0x0 out/GPIO_Driver.o
 
-.data           0x0000000020000000       0x1c load address 0x0000000008000d28
+.data           0x0000000020000000       0x1c load address 0x0000000008000dfc
                 0x0000000020000000                . = ALIGN (0x4)
                 0x0000000020000000                _data_start = .
  *(.data*)
@@ -133,29 +130,29 @@ END GROUP
                 0x000000002000001c                _data_end = .
                 0x000000002000001c                . = ALIGN (0x4)
 
-.igot.plt       0x000000002000001c        0x0 load address 0x0000000008000d44
+.igot.plt       0x000000002000001c        0x0 load address 0x0000000008000e18
  .igot.plt      0x000000002000001c        0x0 out/GPIO_Driver.o
 
-.rodata         0x0000000008000d44      0x1c4
-                0x0000000008000d44                . = ALIGN (0x4)
+.rodata         0x0000000008000e18      0x1e0
+                0x0000000008000e18                . = ALIGN (0x4)
  *(.rodata*)
- .rodata        0x0000000008000d44       0x3c out/Clock_Driver.o
-                0x0000000008000d7c                Clock::registers
- .rodata        0x0000000008000d80       0x38 out/GPIO_Driver.o
- .rodata        0x0000000008000db8       0x71 out/main.o
- *fill*         0x0000000008000e29        0x3 
- .rodata        0x0000000008000e2c       0x26 out/NVIC_Drivers.o
- *fill*         0x0000000008000e52        0x2 
- .rodata        0x0000000008000e54       0xb0 out/UART_Driver.o
-                0x0000000008000f04                . = ALIGN (0x4)
-                0x0000000008000f04                _init_array_start = .
+ .rodata        0x0000000008000e18       0x3c out/Clock_Driver.o
+                0x0000000008000e50                Clock::registers
+ .rodata        0x0000000008000e54       0x38 out/GPIO_Driver.o
+ .rodata        0x0000000008000e8c       0x8d out/main.o
+ *fill*         0x0000000008000f19        0x3 
+ .rodata        0x0000000008000f1c       0x26 out/NVIC_Drivers.o
+ *fill*         0x0000000008000f42        0x2 
+ .rodata        0x0000000008000f44       0xb0 out/UART_Driver.o
+                0x0000000008000ff4                . = ALIGN (0x4)
+                0x0000000008000ff4                _init_array_start = .
  *(SORT_BY_NAME(.init_array.*))
  *(.init_array)
- .init_array    0x0000000008000f04        0x4 out/UART_Driver.o
-                0x0000000008000f08                _init_array_end = .
-                0x0000000008000f08                . = ALIGN (0x4)
+ .init_array    0x0000000008000ff4        0x4 out/UART_Driver.o
+                0x0000000008000ff8                _init_array_end = .
+                0x0000000008000ff8                . = ALIGN (0x4)
 
-.bss            0x000000002000001c      0x644
+.bss            0x000000002000001c      0x650
                 0x000000002000001c                . = ALIGN (0x4)
                 0x000000002000001c                _bss_start = .
  *(.bss*)
@@ -168,36 +165,36 @@ END GROUP
  .bss           0x0000000020000020        0x4 out/stm32_startup.o
                 0x0000000020000020                bss_size
  .bss           0x0000000020000024        0x0 out/SysTick.o
- .bss           0x0000000020000024      0x63c out/UART_Driver.o
+ .bss           0x0000000020000024      0x648 out/UART_Driver.o
                 0x0000000020000024                USART2
-                0x0000000020000034                USART1
-                0x0000000020000044                USART6
-                0x0000000020000054                USART::USART1_MessageStr
-                0x0000000020000258                USART::USART2_MessageStr
-                0x000000002000045c                USART::USART6_MessageStr
-                0x0000000020000660                _bss_end = .
-                0x0000000020000660                end = _bss_end
-                0x0000000020000660                . = ALIGN (0x4)
+                0x0000000020000038                USART1
+                0x000000002000004c                USART6
+                0x0000000020000060                USART::USART1_MessageStr
+                0x0000000020000264                USART::USART2_MessageStr
+                0x0000000020000468                USART::USART6_MessageStr
+                0x000000002000066c                _bss_end = .
+                0x000000002000066c                end = _bss_end
+                0x000000002000066c                . = ALIGN (0x4)
 OUTPUT(bin/bootloader.elf elf32-littlearm)
 LOAD linker stubs
 
-.debug_info     0x0000000000000000     0x34af
+.debug_info     0x0000000000000000     0x3561
  .debug_info    0x0000000000000000      0x4e4 out/Clock_Driver.o
  .debug_info    0x00000000000004e4      0x8f0 out/GPIO_Driver.o
- .debug_info    0x0000000000000dd4      0x979 out/main.o
- .debug_info    0x000000000000174d      0x104 out/m_memory.o
- .debug_info    0x0000000000001851      0x48f out/NVIC_Drivers.o
- .debug_info    0x0000000000001ce0      0x204 out/stm32_startup.o
- .debug_info    0x0000000000001ee4     0x15cb out/UART_Driver.o
+ .debug_info    0x0000000000000dd4      0x9d4 out/main.o
+ .debug_info    0x00000000000017a8      0x104 out/m_memory.o
+ .debug_info    0x00000000000018ac      0x48f out/NVIC_Drivers.o
+ .debug_info    0x0000000000001d3b      0x204 out/stm32_startup.o
+ .debug_info    0x0000000000001f3f     0x1622 out/UART_Driver.o
 
-.debug_abbrev   0x0000000000000000      0xd51
+.debug_abbrev   0x0000000000000000      0xd70
  .debug_abbrev  0x0000000000000000      0x15d out/Clock_Driver.o
  .debug_abbrev  0x000000000000015d      0x23d out/GPIO_Driver.o
- .debug_abbrev  0x000000000000039a      0x261 out/main.o
- .debug_abbrev  0x00000000000005fb       0xa6 out/m_memory.o
- .debug_abbrev  0x00000000000006a1      0x1af out/NVIC_Drivers.o
- .debug_abbrev  0x0000000000000850      0x101 out/stm32_startup.o
- .debug_abbrev  0x0000000000000951      0x400 out/UART_Driver.o
+ .debug_abbrev  0x000000000000039a      0x279 out/main.o
+ .debug_abbrev  0x0000000000000613       0xa6 out/m_memory.o
+ .debug_abbrev  0x00000000000006b9      0x1af out/NVIC_Drivers.o
+ .debug_abbrev  0x0000000000000868      0x101 out/stm32_startup.o
+ .debug_abbrev  0x0000000000000969      0x407 out/UART_Driver.o
 
 .debug_aranges  0x0000000000000000       0xf0
  .debug_aranges
@@ -215,33 +212,33 @@ LOAD linker stubs
  .debug_aranges
                 0x00000000000000c0       0x30 out/UART_Driver.o
 
-.debug_line     0x0000000000000000     0x122e
+.debug_line     0x0000000000000000     0x1295
  .debug_line    0x0000000000000000      0x12c out/Clock_Driver.o
  .debug_line    0x000000000000012c      0x362 out/GPIO_Driver.o
- .debug_line    0x000000000000048e      0x2e2 out/main.o
- .debug_line    0x0000000000000770      0x111 out/m_memory.o
- .debug_line    0x0000000000000881      0x1d5 out/NVIC_Drivers.o
- .debug_line    0x0000000000000a56      0x181 out/stm32_startup.o
- .debug_line    0x0000000000000bd7        0x0 out/SysTick.o
- .debug_line    0x0000000000000bd7      0x657 out/UART_Driver.o
+ .debug_line    0x000000000000048e      0x2e0 out/main.o
+ .debug_line    0x000000000000076e      0x111 out/m_memory.o
+ .debug_line    0x000000000000087f      0x1d5 out/NVIC_Drivers.o
+ .debug_line    0x0000000000000a54      0x181 out/stm32_startup.o
+ .debug_line    0x0000000000000bd5        0x0 out/SysTick.o
+ .debug_line    0x0000000000000bd5      0x6c0 out/UART_Driver.o
 
-.debug_str      0x0000000000000000     0x13f6
+.debug_str      0x0000000000000000     0x13a8
  .debug_str     0x0000000000000000      0x486 out/Clock_Driver.o
                                         0x50a (size before relaxing)
  .debug_str     0x0000000000000486      0x327 out/GPIO_Driver.o
                                         0x7d0 (size before relaxing)
- .debug_str     0x00000000000007ad      0x699 out/main.o
-                                        0xa21 (size before relaxing)
- .debug_str     0x0000000000000e46       0x31 out/m_memory.o
+ .debug_str     0x00000000000007ad      0x6ec out/main.o
+                                        0xa5c (size before relaxing)
+ .debug_str     0x0000000000000e99       0x37 out/m_memory.o
                                         0x183 (size before relaxing)
- .debug_str     0x0000000000000e77       0xaa out/NVIC_Drivers.o
+ .debug_str     0x0000000000000ed0       0xaa out/NVIC_Drivers.o
                                         0x567 (size before relaxing)
- .debug_str     0x0000000000000f21       0xe9 out/stm32_startup.o
+ .debug_str     0x0000000000000f7a       0xe9 out/stm32_startup.o
                                         0x23b (size before relaxing)
- .debug_str     0x000000000000100a       0x10 out/SysTick.o
+ .debug_str     0x0000000000001063       0x10 out/SysTick.o
                                          0xb2 (size before relaxing)
- .debug_str     0x000000000000101a      0x3dc out/UART_Driver.o
-                                       0x1393 (size before relaxing)
+ .debug_str     0x0000000000001073      0x335 out/UART_Driver.o
+                                       0x1323 (size before relaxing)
 
 .comment        0x0000000000000000       0x49
  .comment       0x0000000000000000       0x49 out/Clock_Driver.o
@@ -273,14 +270,14 @@ LOAD linker stubs
  .ARM.attributes
                 0x0000000000000142       0x2e out/UART_Driver.o
 
-.debug_frame    0x0000000000000000      0x554
+.debug_frame    0x0000000000000000      0x4f4
  .debug_frame   0x0000000000000000       0x50 out/Clock_Driver.o
  .debug_frame   0x0000000000000050       0x5c out/GPIO_Driver.o
  .debug_frame   0x00000000000000ac       0x38 out/main.o
  .debug_frame   0x00000000000000e4       0x38 out/m_memory.o
  .debug_frame   0x000000000000011c      0x190 out/NVIC_Drivers.o
  .debug_frame   0x00000000000002ac       0x78 out/stm32_startup.o
- .debug_frame   0x0000000000000324      0x230 out/UART_Driver.o
+ .debug_frame   0x0000000000000324      0x1d0 out/UART_Driver.o
 
 .debug_ranges   0x0000000000000000       0x20
  .debug_ranges  0x0000000000000000       0x20 out/UART_Driver.o

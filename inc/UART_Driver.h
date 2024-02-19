@@ -16,7 +16,7 @@
 #define USART_TX_BUFFER_SIZE   256u
 #define USART_RX_BUFFER_SIZE   256u
 
-
+typedef void (*pCallbackFunc_t) (unsigned char *, uint32_t);
 
 typedef enum{
     USART_BUSY,
@@ -121,6 +121,8 @@ public:
     USART_parity_t parity;
     USART_operation_mode_t operation_mode;
     USART_state_t currentState;
+    bool callbackSwitch;
+    pCallbackFunc_t pRxCallbackFunc;
 
 private:
     volatile USART_Registers_t * const registers;
@@ -131,20 +133,21 @@ private:
 /* Methods area */
 public:
     USART(USART_Registers_t *usart_address)
-        : word_length(WORD_LENTGTH_8BIT), no_stop_bits(NO_STOPBITS_1), baud_rate(9600u), parity(NO_PARITY), operation_mode(FULL_DUPLEX_MODE), currentState(USART_AVAILABLE), registers(usart_address) {}
+        : word_length(WORD_LENTGTH_8BIT), no_stop_bits(NO_STOPBITS_1), baud_rate(9600u),
+        parity(NO_PARITY), operation_mode(FULL_DUPLEX_MODE), currentState(USART_AVAILABLE), 
+        callbackSwitch(false), pRxCallbackFunc(nullptr), registers(usart_address){}
 
     OperationStatus_t Init(void);
-    OperationStatus_t Config(const USART_word_length_t word_length, const USART_parity_t parity, const uint32_t baud_rate, const USART_num_stop_bits_t no_stop_bits);
+    OperationStatus_t Config(const USART_word_length_t word_length, const USART_parity_t parity, 
+                             const uint32_t baud_rate, const USART_num_stop_bits_t no_stop_bits, 
+                             bool callbackSwitch, pCallbackFunc_t RxIntCallbackFunc);
     OperationStatus_t Print(const char *message, uint32_t size, uint32_t waitTime);
     OperationStatus_t PrintIT(const char *message, uint32_t size, uint32_t waitTime);
-    OperationStatus_t Read(char *buffer, uint32_t size, uint32_t waitTime);
-    OperationStatus_t ReadIT(char *buffer, uint32_t size, uint32_t waitTime);
+    OperationStatus_t Read(char unsigned *buffer, uint32_t size, uint32_t waitTime);
+    OperationStatus_t ReadIT(char unsigned *buffer, uint32_t size, uint32_t waitTime);
     friend void USART1_Interrupt(void);
     friend void USART2_Interrupt(void);
     friend void USART6_Interrupt(void);
-    friend void USART1_RxInterruptCallback();
-    friend void USART2_RxInterruptCallback();
-    friend void USART6_RxInterruptCallback();
 
 private:
     OperationStatus_t ConfigBaudRate(const uint32_t baud_rate);

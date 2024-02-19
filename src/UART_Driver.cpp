@@ -27,11 +27,10 @@ volatile USART_MessageStr_t USART::USART2_MessageStr;
 volatile USART_MessageStr_t USART::USART6_MessageStr;
 
 
-void USART1_RxInterruptCallback() __attribute__((weak));
-void USART2_RxInterruptCallback() __attribute__((weak));
-void USART6_RxInterruptCallback() __attribute__((weak));
 
-OperationStatus_t USART::Config(const USART_word_length_t word_length, const USART_parity_t parity, const uint32_t baud_rate, const USART_num_stop_bits_t no_stop_bits)
+OperationStatus_t USART::Config(const USART_word_length_t word_length, const USART_parity_t parity,
+                                const uint32_t baud_rate, const USART_num_stop_bits_t no_stop_bits,
+                                bool callbackSwitch, pCallbackFunc_t RxIntCallbackFunc)
 {
     OperationStatus_t retVal = ST_OK;
 
@@ -47,6 +46,9 @@ OperationStatus_t USART::Config(const USART_word_length_t word_length, const USA
     // 4. Configure baud rate
     this->baud_rate = baud_rate;
 
+    // 5. Configure callback function for RX interrupt
+    this->callbackSwitch = callbackSwitch;
+    this->pRxCallbackFunc = RxIntCallbackFunc;
 
     return retVal;
 }
@@ -146,7 +148,7 @@ OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t wait
     uint32_t startTime = globalTime;
     uint8_t index = 0;
     OperationStatus_t retVal = ST_OK;
-    
+
     // 1. Set the TE bit in CR1 to send an Idle Frame as first transmission
     this->registers->CR1 |= (1 << USART_CR1_BitPos::TE);
 
@@ -179,6 +181,38 @@ OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t wait
 
     return retVal;
 }
+
+OperationStatus_t USART::Read(unsigned char *buffer, uint32_t size, uint32_t waitTime)
+{
+    this->currentState = USART_BUSY;
+    uint32_t startTime = globalTime;
+    uint8_t index = 0;
+    OperationStatus_t retVal = ST_OK;
+
+    // 1. Set the RE bit to enable the receiver search for a start bit
+    this->registers->CR1 |= (1 << USART_CR1_BitPos::RE);
+
+    while(index < size)
+    {
+        if(DELAY_EXCEEDED(startTime, globalTime, waitTime)) 
+        {
+            retVal = TIMEOUT;
+        }
+
+        // 2. Wait for a character to be received
+        if(this->registers->SR & (1 << USART_SR_BitPos::RXNE))
+        {
+            buffer[index++] = this->registers->DR;
+        }
+    }
+
+    // 3. The entire message has been received
+    this->currentState = USART_AVAILABLE;
+
+    return retVal;
+
+}
+
 
 OperationStatus_t USART::PrintIT(const char *message, uint32_t size, uint32_t waitTime)
 {
@@ -229,18 +263,9 @@ OperationStatus_t USART::PrintIT(const char *message, uint32_t size, uint32_t wa
     return retVal;
 }
 
-OperationStatus_t USART::Read(char *buffer, uint32_t size, uint32_t timeout)
+OperationStatus_t USART::ReadIT(unsigned char *buffer, uint32_t size, uint32_t waitTime)
 {
-    PARAM_UNUSED(timeout);
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(size);
-    return ST_OK;
-
-}
-
-OperationStatus_t USART::ReadIT(char *buffer, uint32_t size, uint32_t timeout)
-{
-    PARAM_UNUSED(timeout);
+    PARAM_UNUSED(waitTime);
     PARAM_UNUSED(buffer);
     PARAM_UNUSED(size);
     return ST_OK;
@@ -272,20 +297,5 @@ void USART2_Interrupt(void)
 
     /* 2. Interrupt was triggered by a received byte*/
     
-    
-}
-
-void USART1_RxInterruptCallback()
-{
-
-}
-
-void USART2_RxInterruptCallback()
-{
-    
-}
-
-void USART6_RxInterruptCallback()
-{
     
 }
