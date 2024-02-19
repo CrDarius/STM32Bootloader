@@ -24,12 +24,15 @@ SECTIONS
         . = ALIGN(4);
         *(.text*)
         . = ALIGN(4);
+        _text_end = . ;
     } > FLASH
 
     .data :
     {
         . = ALIGN(4);
+        _data_start = . ;
         *(.data*)
+        _data_end = . ;
         . = ALIGN(4);
     } > SRAM AT > FLASH
 
@@ -37,6 +40,11 @@ SECTIONS
     {
         . = ALIGN(4);
         *(.rodata*)
+        . = ALIGN(4);
+        _init_array_start = .;
+        KEEP (*(SORT(.init_array.*)))
+        KEEP (*(.init_array))
+        _init_array_end = .;
         . = ALIGN(4);
     } > FLASH
 

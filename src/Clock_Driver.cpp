@@ -2,11 +2,6 @@
 
 volatile clock_registers_t * const Clock::registers = (clock_registers_t *)RCC_ADDRESS;
 
-// Clock& Clock::Get_Instance(void)
-// {
-//     static Clock instance;
-//     return instance;
-// }
 
 void Clock::EnableClock_USART2(void)
 {

@@ -1,7 +1,7 @@
 CC=arm-none-eabi-g++
 OPT=-O0
-INCDIRS=. ./inc/
-SRCDIRS=. ./src/
+INCDIRS=. ./inc/ ./inc/Utility/
+SRCDIRS=. ./src/ ./src/Utility/
 OUTDIRS=out
 CFLAGS=-mcpu=cortex-m4 -mthumb -Wall -Wextra -fno-exceptions $(foreach D, $(INCDIRS), -I$(D)) -g
 LFLAGS=-nostartfiles -specs=nano.specs -specs=nosys.specs -Xlinker -Map=$(dir $(BINARY))/$(TARGET).map
@@ -15,8 +15,8 @@ CPPFILES=$(foreach D, $(SRCDIRS), $(wildcard $(D)*.cpp))
 OBJECTS=$(addprefix $(OUTDIRS)/, $(notdir $(patsubst %.cpp, %.o, $(CPPFILES))))
 
 # Used just for debugging purposes
-#$(info CPPFILES = $(CPPFILES))
-#$(info OBJECTS = $(OBJECTS))
+$(info CPPFILES = $(CPPFILES))
+$(info OBJECTS = $(OBJECTS))
 
 all: $(BINARY)
 
@@ -32,7 +32,6 @@ $(BINARY): $(OBJECTS)
 $(OUTDIRS)/%.o: src/%.cpp
 	@mkdir -p $(OUTDIRS)
 	$(CC) $(CFLAGS) $(OPT) -c $^ -o $@
-
 	
 clean:
 	rm -rf $(foreach D, $(SRCDIRS), $(wildcard $(D)*.o)) *.elf *.map $(OUTDIRS) bin
@@ -45,3 +44,6 @@ openocd:
 
 gdb:
 	arm-none-eabi-gdb $(BINARY)
+
+minicom:
+	minicom -D /dev/ttyACM0

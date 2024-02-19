@@ -8,11 +8,15 @@
 #define RAM_INIT_SUCCESS    (1 == 1)
 #define RAM_INIT_FAIL       (1 != 1)
 
+extern void (*_init_array_start []) (void);
+extern void (*_init_array_end []) (void);
+
 extern void Reset_Handler(void);
-uint8_t init_ram(void);
+void init_ram(void);
+void call_ctors(void);
 extern int main(void);
 
-extern uint32_t _bss_start, _bss_end;
+extern uint32_t _bss_start, _bss_end, _data_start, _data_end, _text_end;
 uint32_t bss_size;
 
 __attribute__ ((section(".isr_vector"))) uint32_t vector_table[] = {
@@ -23,6 +27,9 @@ __attribute__ ((section(".isr_vector"))) uint32_t vector_table[] = {
     (uint32_t)MemManage_Interrupt,
     (uint32_t)BusFault_Interrupt,
     (uint32_t)UsageFault_Interrupt,
+    (uint32_t)NULL,
+    (uint32_t)NULL,
+    (uint32_t)NULL,
     (uint32_t)NULL,
     (uint32_t)SVCall_Interrupt,
     (uint32_t)DebugMonitor_Interrupt,
@@ -117,31 +124,44 @@ __attribute__ ((section(".isr_vector"))) uint32_t vector_table[] = {
 };
 
 
-uint8_t init_ram(void)
+void init_ram(void)
 {
-    uint32_t i, bss_size;
-    uint8_t ret_val = RAM_INIT_FAIL;
-    uint8_t *pDest = (uint8_t*)&_bss_start;
+    uint32_t bss_size, data_size;
+    uint32_t i, j;
+    uint8_t *pDest, *pSrc;
 
-    if(&_bss_start > &_bss_end)
-        return ret_val;
-    else
-        bss_size = &_bss_end - &_bss_start;
+   
+   bss_size = (uint8_t *)&_bss_end - (uint8_t *)&_bss_start;
+   data_size = (uint8_t *)&_data_end - (uint8_t *)&_data_start;
+   
 
-    for(i = 0; i < bss_size; i++)
+    pDest = (uint8_t*)&_bss_start;
+    for(j = 0; j < bss_size; j++)
     {
-        pDest[i] = 0;
+        pDest[j] = 0;
     }
 
-    if(i == bss_size)
-        ret_val  = RAM_INIT_SUCCESS;
+    pDest = (uint8_t*)&_data_start;
+    pSrc = (uint8_t*)&_text_end;
+    for(i = 0; i < data_size; i++)
+    {
+        pDest[i] = pSrc[i];
+    }
+}
 
-    return ret_val;
+void call_ctors(void)
+{
+    uint32_t count = _init_array_end - _init_array_start;
+    
+    for(uint32_t i = 0; i < count; i++)
+        _init_array_start[i] ();
 }
 
 void Reset_Handler(void)
 {
-    while(init_ram() == RAM_INIT_FAIL);
+    init_ram();
+
+    call_ctors();
 
     main();
 }

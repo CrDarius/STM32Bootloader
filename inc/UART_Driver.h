@@ -7,14 +7,16 @@
 #include "Clock_Driver.h"
 #include "GPIO_Driver.h"
 #include "SysTick.h"
+#include "NVIC_Drivers.h"
 
-
-#define USART1              ((USART_Registers_t* )USART1_ADDRESS)
-#define USART2              ((USART_Registers_t* )USART2_ADDRESS)
-#define USART6              ((USART_Registers_t* )USART6_ADDRESS)
+#define USART1_INT_POS         37u
+#define USART2_INT_POS         38u
+#define USART6_INT_POS         71u
 
 #define USART_TX_BUFFER_SIZE   256u
 #define USART_RX_BUFFER_SIZE   256u
+
+
 
 typedef enum{
     USART_BUSY,
@@ -122,9 +124,9 @@ public:
 
 private:
     volatile USART_Registers_t * const registers;
-    static USART_MessageStr_t USART1_MessageStr;
-    static USART_MessageStr_t USART2_MessageStr;
-    static USART_MessageStr_t USART6_MessageStr;
+    volatile static USART_MessageStr_t USART1_MessageStr;
+    volatile static USART_MessageStr_t USART2_MessageStr;
+    volatile static USART_MessageStr_t USART6_MessageStr;
 
 /* Methods area */
 public:
@@ -133,13 +135,21 @@ public:
 
     OperationStatus_t Init(void);
     OperationStatus_t Config(const USART_word_length_t word_length, const USART_parity_t parity, const uint32_t baud_rate, const USART_num_stop_bits_t no_stop_bits);
-    OperationStatus_t Print(const char *format, uint32_t size, uint32_t waitTime);
-    OperationStatus_t PrintIT(const char *format, uint32_t size, uint32_t waitTime);
+    OperationStatus_t Print(const char *message, uint32_t size, uint32_t waitTime);
+    OperationStatus_t PrintIT(const char *message, uint32_t size, uint32_t waitTime);
+    OperationStatus_t Read(char *buffer, uint32_t size, uint32_t waitTime);
+    OperationStatus_t ReadIT(char *buffer, uint32_t size, uint32_t waitTime);
     friend void USART1_Interrupt(void);
     friend void USART2_Interrupt(void);
     friend void USART6_Interrupt(void);
+    friend void USART1_RxInterruptCallback();
+    friend void USART2_RxInterruptCallback();
+    friend void USART6_RxInterruptCallback();
 
 private:
     OperationStatus_t ConfigBaudRate(const uint32_t baud_rate);
 };
 
+extern USART USART1;
+extern USART USART2;
+extern USART USART6;
