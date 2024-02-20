@@ -34,21 +34,28 @@ OperationStatus_t USART::Config(const USART_word_length_t word_length, const USA
 {
     OperationStatus_t retVal = ST_OK;
 
-    // 1. Word length configuration
-    this->word_length = word_length;
+    if(this->currentState == USART_AVAILABLE)
+    {
+        // 1. Word length configuration
+        this->word_length = word_length;
 
-    // 2. Parity configuration
-    this->parity = parity;
+        // 2. Parity configuration
+        this->parity = parity;
 
-    // 3. Configure number of stop bits
-    this->no_stop_bits = no_stop_bits;
+        // 3. Configure number of stop bits
+        this->no_stop_bits = no_stop_bits;
 
-    // 4. Configure baud rate
-    this->baud_rate = baud_rate;
+        // 4. Configure baud rate
+        this->baud_rate = baud_rate;
 
-    // 5. Configure callback function for RX interrupt
-    this->callbackSwitch = callbackSwitch;
-    this->pRxCallbackFunc = RxIntCallbackFunc;
+        // 5. Configure callback function for RX interrupt
+        this->callbackSwitch = callbackSwitch;
+        this->pRxCallbackFunc = RxIntCallbackFunc;
+    }
+    else
+    {
+        retVal = ST_BUSY;
+    }
 
     return retVal;
 }
@@ -91,52 +98,58 @@ OperationStatus_t USART::ConfigBaudRate(const uint32_t baud_rate)
 OperationStatus_t USART::Init(void)
 {
     OperationStatus_t retVal = ST_OK;
-
-    // 1. Enable USART Clock
-    Clock::EnableClock_USART2();
-
-    // 2. Configure GPIO
-    GPIO PA2_USART2TX(GPIOA, PIN2);
-    GPIO PA3_USART2RX(GPIOA, PIN3);
-    PA2_USART2TX.Config(ALTERNATE_FUNCTION, OUT_PUSHPULL, MEDIUM_SPEED, NO_PULL_UP_DOWN, AF7);
-    PA3_USART2RX.Config(ALTERNATE_FUNCTION, OUT_PUSHPULL, MEDIUM_SPEED, NO_PULL_UP_DOWN, AF7);
-    PA2_USART2TX.Init();
-    PA3_USART2RX.Init();
-
-    // 1. Enable USART by writing UE bit in CR1
-    this->registers->CR1 |= (1 << USART_CR1_BitPos::UE);
-
-    // 2. Word length configuration
-    if(WORD_LENTGTH_9BIT == this->word_length)
+    if(this->currentState == USART_AVAILABLE)
     {
-        this->registers->CR1 |= (1 << USART_CR1_BitPos::M);
+        // 1. Enable USART Clock
+        Clock::EnableClock_USART2();
+
+        // 2. Configure GPIO
+        GPIO PA2_USART2TX(GPIOA, PIN2);
+        GPIO PA3_USART2RX(GPIOA, PIN3);
+        PA2_USART2TX.Config(ALTERNATE_FUNCTION, OUT_PUSHPULL, MEDIUM_SPEED, NO_PULL_UP_DOWN, AF7);
+        PA3_USART2RX.Config(ALTERNATE_FUNCTION, OUT_PUSHPULL, MEDIUM_SPEED, NO_PULL_UP_DOWN, AF7);
+        PA2_USART2TX.Init();
+        PA3_USART2RX.Init();
+
+        // 1. Enable USART by writing UE bit in CR1
+        this->registers->CR1 |= (1 << USART_CR1_BitPos::UE);
+
+        // 2. Word length configuration
+        if(WORD_LENTGTH_9BIT == this->word_length)
+        {
+            this->registers->CR1 |= (1 << USART_CR1_BitPos::M);
+        }
+        else
+        {
+            this->registers->CR1 &= ~(1 << USART_CR1_BitPos::M);
+        }
+
+        // 3. Parity configuration
+        if(ODD_PARITY == this->parity)
+        {
+            this->registers->CR1 |= (1 << USART_CR1_BitPos::PCE); // enable partity
+            this->registers->CR1 |= (1 << USART_CR1_BitPos::PS);  // select odd parity
+        }
+        else if(EVEN_PARITY == this->parity)
+        {
+            this->registers->CR1 |= (1 << USART_CR1_BitPos::PCE); // enable partity
+            this->registers->CR1 &= ~(1 << USART_CR1_BitPos::PS); // select even parity
+        }
+        else
+        {
+            this->registers->CR1 &= ~(1 << USART_CR1_BitPos::PCE); // no parity
+        }
+
+        // 4. Configure number of stop bits
+        this->registers->CR2 &= ~(0b11 << USART_CR2_BitPos::STOP); // clean bits
+        this->registers->CR2 |= (this->no_stop_bits << USART_CR2_BitPos::STOP);
+
+        retVal = this->ConfigBaudRate(this->baud_rate); 
     }
     else
     {
-        this->registers->CR1 &= ~(1 << USART_CR1_BitPos::M);
+        retVal = ST_BUSY;
     }
-
-    // 3. Parity configuration
-    if(ODD_PARITY == this->parity)
-    {
-        this->registers->CR1 |= (1 << USART_CR1_BitPos::PCE); // enable partity
-        this->registers->CR1 |= (1 << USART_CR1_BitPos::PS);  // select odd parity
-    }
-    else if(EVEN_PARITY == this->parity)
-    {
-        this->registers->CR1 |= (1 << USART_CR1_BitPos::PCE); // enable partity
-        this->registers->CR1 &= ~(1 << USART_CR1_BitPos::PS); // select even parity
-    }
-    else
-    {
-        this->registers->CR1 &= ~(1 << USART_CR1_BitPos::PCE); // no parity
-    }
-
-    // 4. Configure number of stop bits
-    this->registers->CR2 &= ~(0b11 << USART_CR2_BitPos::STOP); // clean bits
-    this->registers->CR2 |= (this->no_stop_bits << USART_CR2_BitPos::STOP);
-
-    retVal = this->ConfigBaudRate(this->baud_rate); 
 
     return retVal;
 }
@@ -218,27 +231,29 @@ OperationStatus_t USART::PrintIT(const char *message, uint32_t size, uint32_t wa
 {
     this->currentState = USART_BUSY;
     OperationStatus_t retVal = ST_OK;
-    USART::USART2_MessageStr.i_TXBuffer_USART = 0;
     PARAM_UNUSED(waitTime);
 
-    if( (USART_TX_BUFFER_SIZE < size) && (size > 0) )
+    if( (USART_TX_BUFFER_SIZE < size) || (0 >= size) )
         retVal = ST_NOK;
     else
     {
         if(this->registers == (USART_Registers_t*)USART1_ADDRESS)
         {
-            m_memcpy((uint8_t*)USART::USART1_MessageStr.TXBuffer_USART, (void*)message, size);
-            USART::USART1_MessageStr.tx_Len = size;
+            USART::USART1_MessageStr.idxTXBufferUSART = 0;
+            m_memcpy((uint8_t*)USART::USART1_MessageStr.txBufferUSART, (void*)message, size);
+            USART::USART1_MessageStr.txLen = size;
         }
         else if(this->registers == (USART_Registers_t*)USART2_ADDRESS)
         {
-            m_memcpy((uint8_t*)USART::USART2_MessageStr.TXBuffer_USART, message, size);
-            USART::USART2_MessageStr.tx_Len = size;
+            USART::USART2_MessageStr.idxTXBufferUSART = 0;
+            m_memcpy((uint8_t*)USART::USART2_MessageStr.txBufferUSART, message, size);
+            USART::USART2_MessageStr.txLen = size;
         }
         else if(this->registers == (USART_Registers_t*)USART6_ADDRESS)
         {
-            m_memcpy((uint8_t*)USART::USART6_MessageStr.TXBuffer_USART, message, size);
-            USART::USART6_MessageStr.tx_Len = size;
+            USART::USART6_MessageStr.idxTXBufferUSART = 0;
+            m_memcpy((uint8_t*)USART::USART6_MessageStr.txBufferUSART, message, size);
+            USART::USART6_MessageStr.txLen = size;
         }
         else
         {
@@ -250,11 +265,11 @@ OperationStatus_t USART::PrintIT(const char *message, uint32_t size, uint32_t wa
     while (!(this->registers->SR & (1 << USART_SR_BitPos::TXE)));
     // Wait for USART to be ready for transmission (TXE flag)
     
-    this->registers->DR = USART::USART2_MessageStr.TXBuffer_USART[USART::USART2_MessageStr.i_TXBuffer_USART++];
+    this->registers->DR = USART::USART2_MessageStr.txBufferUSART[USART::USART2_MessageStr.idxTXBufferUSART++];
 
     // Activate the NVIC interrupt for USART
     NVIC::NVIC_EnableInterrupt(USART2_INT_POS);
-    
+
     this->registers->CR1 |= (1 << USART_CR1_BitPos::TXEIE) | // Activate transmit register empty interrupt
                             (1 << USART_CR1_BitPos::TCIE)  | // Activate transmision complete interrupt
 
@@ -263,12 +278,43 @@ OperationStatus_t USART::PrintIT(const char *message, uint32_t size, uint32_t wa
     return retVal;
 }
 
-OperationStatus_t USART::ReadIT(unsigned char *buffer, uint32_t size, uint32_t waitTime)
+OperationStatus_t USART::ReadIT(uint32_t size, uint32_t waitTime)
 {
+    OperationStatus_t retVal = ST_OK;
     PARAM_UNUSED(waitTime);
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(size);
-    return ST_OK;
+    this->currentState = USART_BUSY;
+
+    if( (USART_RX_BUFFER_SIZE < size) && (0 >= size) )
+        retVal = ST_NOK;
+    else
+    {
+        if( this->registers == (USART_Registers_t*)USART1_ADDRESS )
+        {
+            USART::USART1_MessageStr.rxLen = size;
+            USART::USART1_MessageStr.idxRXBufferUSART = 0;
+        }
+        else if( this->registers == (USART_Registers_t*)USART2_ADDRESS )
+        {
+            USART::USART2_MessageStr.rxLen = size;
+            USART::USART2_MessageStr.idxRXBufferUSART = 0;
+        }
+        else if( this->registers == (USART_Registers_t*)USART6_ADDRESS )
+        {
+            USART::USART6_MessageStr.rxLen = size;
+            USART::USART6_MessageStr.idxRXBufferUSART = 0;
+        }
+    }
+
+    // 1. Activate the NVIC interrupt for USART
+    NVIC::NVIC_EnableInterrupt(USART2_INT_POS);
+
+    // 2. Enable read data register not empty interrupt RXNEIE
+    this->registers->CR1 |= (1 << USART_CR1_BitPos::RXNEIE);
+
+    // 3. Set the RE bit to enable the receiver search for a start bit
+    this->registers->CR1 |= (1 << USART_CR1_BitPos::RE);
+
+    return retVal;
 }
 
 // There are multiple interrupts multiplexed, make sure to check which interrupt was triggered
@@ -276,11 +322,11 @@ void USART2_Interrupt(void)
 {
     /* Check which interrupt event triggered the interrupt */
     /* 1. Interrupt was triggered by a sent byte */
-    if (((USART_Registers_t*)USART2_ADDRESS)->SR & (1 << USART_SR_BitPos::TXE))
+    if ( (((USART_Registers_t*)USART2_ADDRESS)->SR & (1 << USART_SR_BitPos::TXE)) && (((USART_Registers_t*)USART2_ADDRESS)->CR1 & (1 << USART_CR1_BitPos::TXEIE)) )
     {
-        if(USART::USART2_MessageStr.i_TXBuffer_USART < USART::USART2_MessageStr.tx_Len)
+        if(USART::USART2_MessageStr.idxTXBufferUSART < USART::USART2_MessageStr.txLen)
         {
-            ((USART_Registers_t*)USART2_ADDRESS)->DR = USART::USART2_MessageStr.TXBuffer_USART[USART::USART2_MessageStr.i_TXBuffer_USART++];
+            ((USART_Registers_t*)USART2_ADDRESS)->DR = USART::USART2_MessageStr.txBufferUSART[USART::USART2_MessageStr.idxTXBufferUSART++];
         }
         else
         {
@@ -289,13 +335,31 @@ void USART2_Interrupt(void)
             /* Deactivate the NVIC interrupt for USART */
             NVIC::NVIC_DisableInterrupt(USART2_INT_POS);
 
-            /* Set the usart state back to available */
             USART2.currentState = USART_AVAILABLE;
         }
 
     }
 
     /* 2. Interrupt was triggered by a received byte*/
-    
+    else if( (((USART_Registers_t*)USART2_ADDRESS)->SR & (1 << USART_SR_BitPos::RXNE)) && (((USART_Registers_t*)USART2_ADDRESS)->CR1 & (1 << USART_CR1_BitPos::RXNEIE)) )
+    {
+        if(++USART::USART2_MessageStr.idxRXBufferUSART < USART::USART2_MessageStr.rxLen)
+            USART::USART2_MessageStr.rxBufferUSART[USART::USART2_MessageStr.idxRXBufferUSART-1] = ((USART_Registers_t*)USART2_ADDRESS)->DR;
+        else
+        {
+            /* Read the last transmitted byte */
+            USART::USART2_MessageStr.rxBufferUSART[USART::USART2_MessageStr.idxRXBufferUSART-1] = ((USART_Registers_t*)USART2_ADDRESS)->DR;
+
+            /* The entire message has been received, deactivate further interrupts triggered by RXNEIE*/
+            ((USART_Registers_t*)USART2_ADDRESS)->CR1 &= ~(1 << USART_CR1_BitPos::RXNEIE);
+            /* Deactivate the NVIC interrupt for USART */
+            NVIC::NVIC_DisableInterrupt(USART2_INT_POS);
+
+            USART2.currentState = USART_AVAILABLE;
+
+            if( (USART2.callbackSwitch) && (USART2.pRxCallbackFunc != nullptr) )
+                USART2.pRxCallbackFunc();
+        }
+    }
     
 }

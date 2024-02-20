@@ -10,5 +10,6 @@
 typedef enum{
     ST_OK,
     ST_NOK,
+    ST_BUSY,
     TIMEOUT
 }OperationStatus_t;

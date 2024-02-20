@@ -16,7 +16,7 @@
 #define USART_TX_BUFFER_SIZE   256u
 #define USART_RX_BUFFER_SIZE   256u
 
-typedef void (*pCallbackFunc_t) (unsigned char *, uint32_t);
+typedef void (*pCallbackFunc_t) (void);
 
 typedef enum{
     USART_BUSY,
@@ -98,16 +98,13 @@ public:
 }USART_baudrate_comp_t;
 
 typedef struct{
-    uint8_t TXBuffer_USART[USART_TX_BUFFER_SIZE];
-    uint8_t RXBuffer_USART[USART_RX_BUFFER_SIZE];
-    uint8_t i_TXBuffer_USART; // buffer index
-    uint8_t i_RXBuffer_USART; // buffer index
-    uint8_t rx_Len;
-    uint8_t tx_Len;
+    uint8_t txBufferUSART[USART_TX_BUFFER_SIZE];
+    uint8_t rxBufferUSART[USART_RX_BUFFER_SIZE];
+    uint8_t idxTXBufferUSART; // buffer index
+    uint8_t idxRXBufferUSART; // buffer index
+    uint8_t rxLen;
+    uint8_t txLen;
 }USART_MessageStr_t;
-
-/* ---Variables Section--- */
-const uint8_t UART_MAXSIZE_BUFFER = 255u; //maximum number of characters that can be received/transmitted by the host in one cycle
 
 /* ---Functions Section--- */
 void USART2_Interrupt(void);
@@ -122,16 +119,16 @@ public:
     USART_operation_mode_t operation_mode;
     USART_state_t currentState;
     bool callbackSwitch;
-    pCallbackFunc_t pRxCallbackFunc;
+    pCallbackFunc_t pRxCallbackFunc; // pointer to function implemented by application (intended to be used for copying data from USART buffer to application buffer)
 
 private:
     volatile USART_Registers_t * const registers;
     volatile static USART_MessageStr_t USART1_MessageStr;
-    volatile static USART_MessageStr_t USART2_MessageStr;
     volatile static USART_MessageStr_t USART6_MessageStr;
 
 /* Methods area */
 public:
+    volatile static USART_MessageStr_t USART2_MessageStr;
     USART(USART_Registers_t *usart_address)
         : word_length(WORD_LENTGTH_8BIT), no_stop_bits(NO_STOPBITS_1), baud_rate(9600u),
         parity(NO_PARITY), operation_mode(FULL_DUPLEX_MODE), currentState(USART_AVAILABLE), 
@@ -144,7 +141,7 @@ public:
     OperationStatus_t Print(const char *message, uint32_t size, uint32_t waitTime);
     OperationStatus_t PrintIT(const char *message, uint32_t size, uint32_t waitTime);
     OperationStatus_t Read(char unsigned *buffer, uint32_t size, uint32_t waitTime);
-    OperationStatus_t ReadIT(char unsigned *buffer, uint32_t size, uint32_t waitTime);
+    OperationStatus_t ReadIT(uint32_t size, uint32_t waitTime);
     friend void USART1_Interrupt(void);
     friend void USART2_Interrupt(void);
     friend void USART6_Interrupt(void);
