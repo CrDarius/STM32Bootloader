@@ -99,7 +99,7 @@ public:
 
 typedef struct{
     uint8_t txBufferUSART[USART_TX_BUFFER_SIZE];
-    uint8_t rxBufferUSART[USART_RX_BUFFER_SIZE];
+    uint8_t* rxBufferUSART;
     uint8_t idxTXBufferUSART; // buffer index
     uint8_t idxRXBufferUSART; // buffer index
     uint8_t rxLen;
@@ -108,6 +108,7 @@ typedef struct{
 
 /* ---Functions Section--- */
 void USART2_Interrupt(void);
+
 
 struct USART{
 /* Attributes area */ 
@@ -124,11 +125,11 @@ public:
 private:
     volatile USART_Registers_t * const registers;
     volatile static USART_MessageStr_t USART1_MessageStr;
+    volatile static USART_MessageStr_t USART2_MessageStr;
     volatile static USART_MessageStr_t USART6_MessageStr;
 
 /* Methods area */
 public:
-    volatile static USART_MessageStr_t USART2_MessageStr;
     USART(USART_Registers_t *usart_address)
         : word_length(WORD_LENTGTH_8BIT), no_stop_bits(NO_STOPBITS_1), baud_rate(9600u),
         parity(NO_PARITY), operation_mode(FULL_DUPLEX_MODE), currentState(USART_AVAILABLE), 
@@ -137,11 +138,17 @@ public:
     OperationStatus_t Init(void);
     OperationStatus_t Config(const USART_word_length_t word_length, const USART_parity_t parity, 
                              const uint32_t baud_rate, const USART_num_stop_bits_t no_stop_bits, 
-                             bool callbackSwitch, pCallbackFunc_t RxIntCallbackFunc);
+                             bool callbackSwitch = false, pCallbackFunc_t RxIntCallbackFunc = nullptr);
     OperationStatus_t Print(const char *message, uint32_t size, uint32_t waitTime);
     OperationStatus_t PrintIT(const char *message, uint32_t size, uint32_t waitTime);
     OperationStatus_t Read(char unsigned *buffer, uint32_t size, uint32_t waitTime);
-    OperationStatus_t ReadIT(uint32_t size, uint32_t waitTime);
+    OperationStatus_t ReadIT(uint8_t *buffer, uint32_t size, uint32_t waitTime);
+
+    /*
+        Other utility functions to be implemented: 
+            - Copy from RX buffer function would often be needed for implementing a callback
+    */
+
     friend void USART1_Interrupt(void);
     friend void USART2_Interrupt(void);
     friend void USART6_Interrupt(void);

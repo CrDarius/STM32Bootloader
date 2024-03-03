@@ -15,8 +15,9 @@ CPPFILES=$(foreach D, $(SRCDIRS), $(wildcard $(D)*.cpp))
 OBJECTS=$(addprefix $(OUTDIRS)/, $(notdir $(patsubst %.cpp, %.o, $(CPPFILES))))
 
 # Used just for debugging purposes
-$(info CPPFILES = $(CPPFILES))
-$(info OBJECTS = $(OBJECTS))
+# $(info CPPFILES = $(CPPFILES))
+# $(info OBJECTS = $(OBJECTS))
+
 
 all: $(BINARY)
 
@@ -29,12 +30,20 @@ $(BINARY): $(OBJECTS)
 	@mkdir -p bin
 	$(CC) $(LSCRIPT) $(LFLAGS) $^ -o $@
 
-$(OUTDIRS)/%.o: src/%.cpp
+
+VPATH := $(dir $(CPPFILES))
+
+$(OUTDIRS)/%.o: %.cpp
 	@mkdir -p $(OUTDIRS)
 	$(CC) $(CFLAGS) $(OPT) -c $^ -o $@
 	
+
 clean:
-	rm -rf $(foreach D, $(SRCDIRS), $(wildcard $(D)*.o)) *.elf *.map $(OUTDIRS) bin
+	rm -rf out
+	rm -rf *.bin 
+	rm -rf *.elf
+	rm -rf bin 
+
 
 dump: $(BINARY)
 	arm-none-eabi-objdump -xS -C arm $^
@@ -47,3 +56,5 @@ gdb:
 
 minicom:
 	minicom -D /dev/ttyACM0
+
+.PHONY: clean openocd gdb minicom

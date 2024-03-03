@@ -6,22 +6,18 @@ void RxUSARTCallbackFunc(void);
 
 int main(void)
 {
-    // unsigned char text[200];
+    unsigned char text[200];
     // unsigned char nrRxBytes;
     SetBasePriority(0xFF);
     EnableAllInterrupts();
     // Set the interrupt priority for USART2
     NVIC::NVIC_SetInterruptPriority(USART2_INT_POS, 0xFFu);
-    (void)USART2.Config(WORD_LENTGTH_8BIT, NO_PARITY, 9600, NO_STOPBITS_2, true, RxUSARTCallbackFunc);
+    (void)USART2.Config(WORD_LENTGTH_8BIT, NO_PARITY, 9600, NO_STOPBITS_2);
     if(USART2.Init() == ST_OK)
     {
-        // USART2.Print("Print noInt_1\n", 13, MAX_DELAY);
-        // USART2.Print("Print noInt_2\n", 13, MAX_DELAY);
-        // USART2.Read(&nrRxBytes, 1, MAX_DELAY);
-        // USART2.Read(&text[0], nrRxBytes, MAX_DELAY);
-        //USART2.PrintIT("Print interrupt", 12, MAX_DELAY);
-        while(USART2.ReadIT(4, MAX_DELAY) == ST_BUSY);
-
+        USART2.PrintIT("Print before read", 17, MAX_DELAY);
+        while(USART2.ReadIT(text, 4, MAX_DELAY) == ST_BUSY);
+        while(USART2.PrintIT("Print before read", 17, MAX_DELAY) == ST_BUSY);
     }
     else
     {
@@ -30,8 +26,4 @@ int main(void)
     while(1);
 }
 
-void RxUSARTCallbackFunc(void)
-{
-    USART2.PrintIT((const char*)&USART::USART2_MessageStr.rxBufferUSART[0], USART::USART2_MessageStr.rxLen, MAX_DELAY);
-}
 

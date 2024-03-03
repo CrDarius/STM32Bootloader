@@ -278,13 +278,13 @@ OperationStatus_t USART::PrintIT(const char *message, uint32_t size, uint32_t wa
     return retVal;
 }
 
-OperationStatus_t USART::ReadIT(uint32_t size, uint32_t waitTime)
+OperationStatus_t USART::ReadIT(uint8_t *buffer, uint32_t size, uint32_t waitTime)
 {
     OperationStatus_t retVal = ST_OK;
     PARAM_UNUSED(waitTime);
     this->currentState = USART_BUSY;
 
-    if( (USART_RX_BUFFER_SIZE < size) && (0 >= size) )
+    if( (USART_RX_BUFFER_SIZE < size) && (0 >= size) && (buffer != nullptr))
         retVal = ST_NOK;
     else
     {
@@ -292,16 +292,19 @@ OperationStatus_t USART::ReadIT(uint32_t size, uint32_t waitTime)
         {
             USART::USART1_MessageStr.rxLen = size;
             USART::USART1_MessageStr.idxRXBufferUSART = 0;
+            USART::USART1_MessageStr.rxBufferUSART = buffer;
         }
         else if( this->registers == (USART_Registers_t*)USART2_ADDRESS )
         {
             USART::USART2_MessageStr.rxLen = size;
             USART::USART2_MessageStr.idxRXBufferUSART = 0;
+            USART::USART2_MessageStr.rxBufferUSART = buffer;
         }
         else if( this->registers == (USART_Registers_t*)USART6_ADDRESS )
         {
             USART::USART6_MessageStr.rxLen = size;
             USART::USART6_MessageStr.idxRXBufferUSART = 0;
+            USART::USART6_MessageStr.rxBufferUSART = buffer;
         }
     }
 
