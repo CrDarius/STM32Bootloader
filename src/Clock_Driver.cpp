@@ -13,6 +13,3 @@ void Clock::EnableClock_GPIOA(void)
     Clock::registers->AHB1ENR |= (1 << RCC_AHB1ENR_BitPos::GPIOA_EN);
 }
 
-
-// to be moved
-volatile uint32_t globalTime;

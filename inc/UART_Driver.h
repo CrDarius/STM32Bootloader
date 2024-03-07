@@ -139,15 +139,10 @@ public:
     OperationStatus_t Config(const USART_word_length_t word_length, const USART_parity_t parity, 
                              const uint32_t baud_rate, const USART_num_stop_bits_t no_stop_bits, 
                              bool callbackSwitch = false, pCallbackFunc_t RxIntCallbackFunc = nullptr);
-    OperationStatus_t Print(const char *message, uint32_t size, uint32_t waitTime);
-    OperationStatus_t PrintIT(const char *message, uint32_t size, uint32_t waitTime);
-    OperationStatus_t Read(char unsigned *buffer, uint32_t size, uint32_t waitTime);
-    OperationStatus_t ReadIT(uint8_t *buffer, uint32_t size, uint32_t waitTime);
-
-    /*
-        Other utility functions to be implemented: 
-            - Copy from RX buffer function would often be needed for implementing a callback
-    */
+    OperationStatus_t Print(const char *message, uint32_t size, uint32_t waitTime = MAX_DELAY);
+    OperationStatus_t PrintIT(const char *message, uint32_t size, uint32_t waitTime = MAX_DELAY);
+    OperationStatus_t Read(char unsigned *buffer, uint32_t size, uint32_t waitTime = MAX_DELAY);
+    OperationStatus_t ReadIT(uint8_t *buffer, uint32_t size, uint32_t waitTime = MAX_DELAY);
 
     friend void USART1_Interrupt(void);
     friend void USART2_Interrupt(void);

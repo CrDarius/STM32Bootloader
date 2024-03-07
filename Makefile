@@ -15,8 +15,8 @@ CPPFILES=$(foreach D, $(SRCDIRS), $(wildcard $(D)*.cpp))
 OBJECTS=$(addprefix $(OUTDIRS)/, $(notdir $(patsubst %.cpp, %.o, $(CPPFILES))))
 
 # Used just for debugging purposes
-# $(info CPPFILES = $(CPPFILES))
-# $(info OBJECTS = $(OBJECTS))
+ $(info CPPFILES = $(CPPFILES))
+ $(info OBJECTS = $(OBJECTS))
 
 
 all: $(BINARY)

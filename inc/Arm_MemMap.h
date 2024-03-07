@@ -10,3 +10,8 @@ const uint32_t NVIC_ICPR_ADDRESS   = 0xE000E280u;
 const uint32_t NVIC_IABR_ADDRESS   = 0xE000E300u;
 const uint32_t NVIC_IPR_ADDRESS    = 0xE000E400u;
 const uint32_t NVIC_STIR_ADDRESS   = 0xE000EF00u;
+
+const uint32_t SYST_CSR_ADRESS     = 0xE000E010;
+const uint32_t SYST_RVR_ADRESS     = 0xE000E014;
+const uint32_t SYST_CVR_ADRESS     = 0xE000E018;
+const uint32_t SYST_CALIB_ADRESS   = 0xE000E01C;
