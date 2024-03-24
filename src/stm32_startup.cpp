@@ -12,8 +12,9 @@ extern void (*_init_array_start []) (void);
 extern void (*_init_array_end []) (void);
 
 extern void Reset_Handler(void);
-void init_ram(void);
-void call_ctors(void);
+static void init_ram(void);
+static void call_ctors(void);
+static void init_stack(void);
 extern int main(void);
 
 extern uint32_t _bss_start, _bss_end, _data_start, _data_end, _text_end;
@@ -124,7 +125,7 @@ __attribute__ ((section(".isr_vector"))) uint32_t vector_table[] = {
 };
 
 
-void init_ram(void)
+static void init_ram(void)
 {
     uint32_t bss_size, data_size;
     uint32_t i, j;
@@ -149,7 +150,7 @@ void init_ram(void)
     }
 }
 
-void call_ctors(void)
+static void call_ctors(void)
 {
     uint32_t count = _init_array_end - _init_array_start;
     
@@ -157,8 +158,15 @@ void call_ctors(void)
         _init_array_start[i] ();
 }
 
+static void init_stack(void)
+{
+    asm volatile("mov sp, %0" : : "r"(vector_table[0]));
+}
+
 void Reset_Handler(void)
 {
+    init_stack();   
+
     init_ram();
 
     call_ctors();

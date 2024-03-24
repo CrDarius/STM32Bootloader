@@ -158,7 +158,7 @@ OperationStatus_t USART::Init(void)
 OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t waitTime)
 {
     this->currentState = USART_BUSY;
-    uint32_t startTime = globalTime;
+    uint32_t startTime = SysTick::GetGlobalTime();
     uint8_t index = 0;
     OperationStatus_t retVal = ST_OK;
 
@@ -169,7 +169,7 @@ OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t wait
     this->registers->DR = message[index++];
     while(index < size)
     {
-        if(DELAY_EXCEEDED(startTime, globalTime, waitTime)) 
+        if(DELAY_EXCEEDED(startTime, SysTick::GetGlobalTime(), waitTime)) 
         {
             retVal = TIMEOUT;
         }
@@ -184,7 +184,7 @@ OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t wait
     // 3. After last byte is written to DR wait until TC = 1. This will indicate that the transmission of last byte is complete.
     while(!(this->registers->SR & (1 << USART_SR_BitPos::TC)))
     {
-        if(DELAY_EXCEEDED(startTime, globalTime, waitTime))
+        if(DELAY_EXCEEDED(startTime, SysTick::GetGlobalTime(), waitTime))
         {
             retVal = TIMEOUT;
         }   
@@ -198,7 +198,7 @@ OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t wait
 OperationStatus_t USART::Read(unsigned char *buffer, uint32_t size, uint32_t waitTime)
 {
     this->currentState = USART_BUSY;
-    uint32_t startTime = globalTime;
+    uint32_t startTime = SysTick::GetGlobalTime();
     uint8_t index = 0;
     OperationStatus_t retVal = ST_OK;
 
@@ -207,7 +207,7 @@ OperationStatus_t USART::Read(unsigned char *buffer, uint32_t size, uint32_t wai
 
     while(index < size)
     {
-        if(DELAY_EXCEEDED(startTime, globalTime, waitTime)) 
+        if(DELAY_EXCEEDED(startTime, SysTick::GetGlobalTime(), waitTime)) 
         {
             retVal = TIMEOUT;
         }

@@ -4,6 +4,14 @@
 
 #define MCU_CLOCK_SPEED_HZ  16000000U
 
+/* Using MAX_DELAY for timing functions will evaluate to undefinitive waiting posibility */
+#define MAX_DELAY   UINT32_MAX
+
+#define DELAY_EXCEEDED(startTime, currentTime, waitTime)     ( ((currentTime)>((startTime)+(waitTime)) && ((currentTime) > (startTime)) ) \
+                                                            || ((((currentTime)+((MAX_DELAY)-(startTime)))>(waitTime))  && ((currentTime) < (startTime))) )
+
+void Systick_Interrupt(void);
+
 typedef struct
 {
 public:
@@ -42,16 +50,19 @@ typedef enum{
 struct SysTick
 {
 public:
-    static void SysTick_Enable(void);
-    static void SysTick_Disable(void);
+    static void Enable(void);
+    static void Disable(void);
 
     /* Set the system timer in microseconds */
-    static void SysTick_SetReloadValue(uint32_t);
-    static void SysTick_SetTickSrc(SYSTICK_ClockSrc);
-    static void SysTick_EnableInt(void);
-    static void SysTick_DisableInt(void);
+    static void SetReloadValue(uint32_t);
+    static void SetTickSrc(SYSTICK_ClockSrc);
+    static void EnableInt(void);
+    static void DisableInt(void);
+    static uint32_t GetGlobalTime(void);
 
+    friend void Systick_Interrupt(); 
 private:
     SysTick() = default;
+    static volatile uint32_t globalTime;
     static volatile SYSTICK_registers_t * const registers;
 };

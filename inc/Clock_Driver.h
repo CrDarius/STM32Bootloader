@@ -190,5 +190,10 @@ public:
     /* Create a generic Clock Enable for a peripheral type and then get the index as parameter */
     static void EnableClock_USART2(void);
     static void EnableClock_GPIOA(void);
+    static void EnableClock_GPIOB(void);
+    static void EnableClock_GPIOC(void);
+    static void EnableClock_GPIOD(void);
+    static void EnableClock_GPIOE(void);
+    static void EnableClock_GPIOH(void);
 };
 

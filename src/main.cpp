@@ -1,47 +1,45 @@
-#include <stdio.h>
-#include <cstring>
-#include "UART_Driver.h"
-#include "general_types.h"
-#include "SysTick.h"
-#include "MCU_Utilities.h"
-
-void SetGlobalTimer(void)
-{           
-    SysTick::SysTick_SetReloadValue(1000000);
-    SysTick::SysTick_EnableInt();
-    SysTick::SysTick_SetTickSrc(SYSTICK_ClockSrc::PROC_CLOCK);
-    SysTick::SysTick_Enable();
-}
+#include "main.h"
 
 int main(void)
 {
+    bool enterBootMode = false;
     SetBasePriority(0xFF);
     EnableAllInterrupts();
     // Set the interrupt priority for USART2
     NVIC::NVIC_SetInterruptPriority(USART2_INT_POS, 0xFFu);
     SetGlobalTimer();
+    GPIO userButton(GPIOC, PIN13);
+    userButton.Config(INPUT);
+    userButton.Init();
     (void)USART2.Config(WORD_LENTGTH_8BIT, NO_PARITY, 9600, NO_STOPBITS_2);
-    if(USART2.Init() == ST_OK)
-    {
-        uint32_t currentTime = globalTime;
-        uint8_t i = 0;
-        while(i < 10)
-        {
-            if(globalTime-currentTime)
-            {
-                char msg[] = "Message\n\r";
-                USART2.Print((const char*)&msg[0], strlen(msg));
-                currentTime = globalTime;
-                i++;
-            }
+    (void)USART2.Init();
 
+    uint32_t currentTime = SysTick::GetGlobalTime();
+
+    while( SysTick::GetGlobalTime() < (currentTime + BOOT_TIMEOUT) )
+    {
+        if(GetUserButtonState(userButton) == BUTTON_PRESSED)
+        {
+            enterBootMode = true;      
+            break;
         }
+    }
+
+    if(enterBootMode == false)
+    {
+        // jump to user application
+        const char *msg = "Jumping to user app\r\n";
+        USART2.Print(msg, strlen(msg),MAX_DELAY);
+        JumpToUserApp();
     }
     else
     {
-        // should not be reached
-    }   
+        // jump to bootloader application 
+        const char *msg = "Message from bootloader\r\n";
+        USART2.Print(msg, strlen(msg),MAX_DELAY);
+    }
+    
+
     while(1);
 }
-
 

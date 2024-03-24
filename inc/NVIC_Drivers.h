@@ -21,6 +21,11 @@ const uint8_t NrOfNVICIntActivateBitRegs = 8;
 /* Number of NVIC Interrupt Priority Register */
 const uint8_t NrOfNVICIntPrioRegs = 60;
 
+typedef enum
+{
+    
+}NVIC_InterruptPosition_t;
+
 typedef struct 
 {
     uint32_t * const NVIC_ISER;

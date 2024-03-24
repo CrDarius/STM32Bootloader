@@ -11,6 +11,8 @@
 #define GPIOE         ((GPIO_registers_t*)GPIOE_ADDRESS)
 #define GPIOH         ((GPIO_registers_t*)GPIOH_ADDRESS)
 
+#define ROFFSET       16u
+
 typedef struct
 {
     uint32_t MODER;
@@ -24,6 +26,13 @@ typedef struct
     uint32_t AFRL;
     uint32_t AFRH;
 }GPIO_registers_t;
+
+typedef enum
+{
+    PIN_LOW,
+    PIN_HIGH
+}PIN_State_t;
+
 
 typedef enum
 {
@@ -115,19 +124,18 @@ public:
 private:
     volatile GPIO_registers_t * const registers;
     GPIO_pin_t pin;
-    const uint8_t no_registers = 10;
 
 
 /* Methods area */
 public:
     GPIO(GPIO_registers_t *GPIO_Address, GPIO_pin_t pin)
-        :registers(GPIO_Address), pin(pin)
-        {
-            // Clear all registers
-            //memset(registers, 0, no_registers*sizeof(uint32_t));
-        }
+        :registers(GPIO_Address), pin(pin){}
 
-    void Config(GPIO_port_mode_t mode, GPIO_port_output_config_t output_configuration, GPIO_port_speed_t speed, GPIO_port_pull_t pull_configuration, GPIO_port_alternatefunction_t alternate_function);
+    void Config(GPIO_port_mode_t mode, GPIO_port_output_config_t output_configuration = OUT_PUSHPULL, 
+                GPIO_port_speed_t speed = LOW_SPEED, GPIO_port_pull_t pull_configuration = NO_PULL_UP_DOWN, 
+                GPIO_port_alternatefunction_t alternate_function = AF0);
     void Init(void);
+    PIN_State_t GPIO_ReadPin(void) const;
+    void GPIO_WritePin(PIN_State_t state);
 };
 

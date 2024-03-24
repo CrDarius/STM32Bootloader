@@ -57,4 +57,4 @@ gdb:
 minicom:
 	minicom -D /dev/ttyACM0
 
-.PHONY: clean openocd gdb minicom
+.PHONY: clean openocd gdb minicom dump

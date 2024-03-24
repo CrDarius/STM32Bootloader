@@ -1,14 +1,16 @@
 #pragma once
 #include "SysTick.h"
+#include "Bootloader_MemMap.h"
 
-/* Using MAX_DELAY for timing functions will evaluate to undefinitive waiting posibility */
-#define MAX_DELAY   UINT32_MAX
+void constexpr SetVTOR(const uint32_t offset);
+void inline SetStackPointer(const uint32_t address);
 
-#define DELAY_EXCEEDED(startTime, currentTime, waitTime)     ( ((currentTime)>((startTime)+(waitTime)) && ((currentTime) > (startTime)) ) \
-                                                            || ((((currentTime)+((MAX_DELAY)-(startTime)))>(waitTime))  && ((currentTime) < (startTime))) )
+void constexpr SetVTOR(const uint32_t offset)
+{
+    *(uint32_t*)VTOR_ADDRESS = offset; 
+}
 
-void Systick_Interrupt(void);
-
-extern volatile uint32_t globalTime;
-
-
+void inline SetStackPointer(const uint32_t address)
+{
+    asm volatile("mov sp, %0" : : "r"(address));
+}
