@@ -1,7 +1,7 @@
 CC=arm-none-eabi-g++
 OPT=-O0
-INCDIRS=. ./inc/ ./inc/Utility/
-SRCDIRS=. ./src/ ./src/Utility/
+INCDIRS=. ./inc/ ./inc/Utility/ ./inc/Drivers/ ./inc/target/
+SRCDIRS=. ./src/ ./src/Utility/ ./src/Drivers/
 OUTDIRS=out
 CFLAGS=-mcpu=cortex-m4 -mthumb -Wall -Wextra -fno-exceptions $(foreach D, $(INCDIRS), -I$(D)) -g
 LFLAGS=-nostartfiles -specs=nano.specs -specs=nosys.specs -Xlinker -Map=$(dir $(BINARY))/$(TARGET).map
