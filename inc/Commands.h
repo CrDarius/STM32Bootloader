@@ -1,0 +1,24 @@
+#pragma once
+
+#include <stdint.h>
+#include "general_types.h"
+
+extern const uint8_t NUMBER_OF_COMMANDS;
+
+typedef struct
+{
+    uint8_t serviceCode;
+    OperationStatus_t (*serviceHandler) (uint8_t *buffer, uint8_t dataLength);   
+}Commands_t;
+
+extern Commands_t serviceTable[];
+
+OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootGetCID(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootReadSectorStatus(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootControlRWProt(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t JumpToApplication(uint8_t *buffer, uint8_t dataLength);

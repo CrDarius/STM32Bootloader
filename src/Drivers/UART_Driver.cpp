@@ -155,7 +155,7 @@ OperationStatus_t USART::Init(void)
 }
 
 
-OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t waitTime)
+OperationStatus_t USART::Transmit(const char *message, uint32_t size, uint32_t waitTime)
 {
     this->currentState = USART_BUSY;
     uint32_t startTime = SysTick::GetGlobalTime();
@@ -195,7 +195,7 @@ OperationStatus_t USART::Print(const char *message, uint32_t size, uint32_t wait
     return retVal;
 }
 
-OperationStatus_t USART::Read(unsigned char *buffer, uint32_t size, uint32_t waitTime)
+OperationStatus_t USART::Read(uint8_t *buffer, uint32_t size, uint32_t waitTime)
 {
     this->currentState = USART_BUSY;
     uint32_t startTime = SysTick::GetGlobalTime();
@@ -227,7 +227,7 @@ OperationStatus_t USART::Read(unsigned char *buffer, uint32_t size, uint32_t wai
 }
 
 
-OperationStatus_t USART::PrintIT(const char *message, uint32_t size, uint32_t waitTime)
+OperationStatus_t USART::TransmitIT(const char *message, uint32_t size, uint32_t waitTime)
 {
     this->currentState = USART_BUSY;
     OperationStatus_t retVal = ST_OK;

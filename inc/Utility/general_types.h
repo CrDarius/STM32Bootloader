@@ -11,5 +11,8 @@ typedef enum{
     ST_OK,
     ST_NOK,
     ST_BUSY,
-    TIMEOUT
+    TIMEOUT, 
+    ST_WRONG_CRC,
+    CMD_NOT_FOUND,
+    ACK = 0xAA
 }OperationStatus_t;

@@ -37,3 +37,8 @@ void Clock::EnableClock_GPIOH(void)
 {
     Clock::registers->AHB1ENR |= (1 << RCC_AHB1ENR_BitPos::GPIOH_EN);
 }
+
+void Clock::EnableClock_CRC(void)
+{
+    Clock::registers->AHB1ENR |= (1 << RCC_AHB1ENR_BitPos::CRC_EN);
+}

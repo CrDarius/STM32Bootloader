@@ -1,18 +1,22 @@
 #include "main.h"
 
+
+
 int main(void)
 {
-    bool enterBootMode = false;
-    SetBasePriority(0xFF);
-    EnableAllInterrupts();
-    // Set the interrupt priority for USART2
-    NVIC::NVIC_SetInterruptPriority(USART2_INT_POS, 0xFFu);
-    SetGlobalTimer();
     GPIO userButton(GPIOC, PIN13);
-    userButton.Config(INPUT);
-    userButton.Init();
-    (void)USART2.Config(WORD_LENTGTH_8BIT, NO_PARITY, 9600, NO_STOPBITS_2);
-    (void)USART2.Init();
+
+    /* Initialize all needed drivers */
+    NVIC_INIT();
+
+    GPIO_INIT(userButton);
+
+    USART_INIT();
+
+    CRC_INIT();
+    
+    SetGlobalTimer();
+    /* End of driver initialization */
 
     uint32_t currentTime = SysTick::GetGlobalTime();
 
@@ -20,26 +24,22 @@ int main(void)
     {
         if(GetUserButtonState(userButton) == BUTTON_PRESSED)
         {
-            enterBootMode = true;      
-            break;
+            // jump to bootloader application 
+            const char *msg = "Jumping to boot control\r\n";
+            USART2.Transmit(msg, strlen(msg),MAX_DELAY);
+            BootControl();
         }
     }
 
-    if(enterBootMode == false)
-    {
-        // jump to user application
-        const char *msg = "Jumping to user app\r\n";
-        USART2.Print(msg, strlen(msg),MAX_DELAY);
-        JumpToUserApp();
-    }
-    else
-    {
-        // jump to bootloader application 
-        const char *msg = "Message from bootloader\r\n";
-        USART2.Print(msg, strlen(msg),MAX_DELAY);
-    }
+    // jump to user application
+    const char *msg = "Jumping to user app\r\n";
+    USART2.Transmit(msg, strlen(msg),MAX_DELAY);
+    JumpToUserApp();
     
 
-    while(1);
+    while(true)
+    {
+        /* Should never reach here */
+    }
 }
 

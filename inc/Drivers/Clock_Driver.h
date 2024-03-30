@@ -195,5 +195,6 @@ public:
     static void EnableClock_GPIOD(void);
     static void EnableClock_GPIOE(void);
     static void EnableClock_GPIOH(void);
+    static void EnableClock_CRC(void);
 };
 
