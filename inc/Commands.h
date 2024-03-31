@@ -7,6 +7,7 @@
 #define CMD_POS                 0u
 #define RESP_POS                1u
 #define LEN_POS                 2u
+#define DATA_POS                3u
 
 extern const uint8_t NUMBER_OF_COMMANDS;
 

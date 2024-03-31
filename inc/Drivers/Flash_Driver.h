@@ -4,6 +4,8 @@
 #include "general_types.h"
 #include "Mcu_MemMap.h"
 
+#define ALL_SECTORS  0xFFu
+
 const uint32_t FLASH_OPTION_BYTES_ADDRESS   = 0x1FFFC000u;
 
 /* Flash keys to allow access to control register */
@@ -136,7 +138,7 @@ public:
 
 public:
     static OperationStatus_t MassErase(void);
-    static OperationStatus_t SectorErase(uint8_t sectorsBitMask);
+    static OperationStatus_t SectorErase(uint8_t& sectorsBitMask);
     static OperationStatus_t WriteFlash(const void* src, void* dest, uint32_t length);
     static void ReadProtOptionBytes(uint8_t& status);
     static void Config(Flash_option_t prefetch, Flash_latency_t latency, Flash_parallel_t paralellism);

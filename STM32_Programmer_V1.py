@@ -39,7 +39,7 @@ COMMAND_BL_GET_VER_DATALEN                  = 0
 COMMAND_BL_GET_CID_DATALEN                  = 0
 COMMAND_BL_GET_RDP_STATUS_DATALEN           = 0
 COMMAND_BL_GO_TO_ADDR_DATALEN               = 0            
-COMMAND_BL_FLASH_ERASE_DATALEN              = 0            
+COMMAND_BL_FLASH_ERASE_DATALEN              = 1            
 COMMAND_BL_MEM_WRITE_DATALEN                = 0            
 COMMAND_BL_EN_R_W_PROTECT_DATALEN           = 0            
 COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN     = 0            
@@ -120,7 +120,7 @@ def serial_ports():
 def Serial_Port_Configuration(port):
     global ser
     try:
-        ser = serial.Serial(port, baudrate = 9600, bytesize = 8, parity = 'N', stopbits = 2, timeout=2)
+        ser = serial.Serial(port, baudrate = 9600, bytesize = 8, parity = 'N', stopbits = 2, timeout=5)
     except:
         print("\n   Oops! That was not a valid port")
         
@@ -189,22 +189,16 @@ def process_COMMAND_BL_GO_TO_ADDR(length):
     print("\n   Address Status : ",hex(addr_status[0]))
 
 def process_COMMAND_BL_FLASH_ERASE(length):
-    erase_status=0
     value = read_serial_port(length)
+    erase_status = bytearray(value)
     if len(value):
-        erase_status = bytearray(value)
-        if(erase_status[0] == Flash_HAL_OK):
-            print("\n   Erase Status: Success  Code: FLASH_HAL_OK")
-        elif(erase_status[0] == Flash_HAL_ERROR):
-            print("\n   Erase Status: Fail  Code: FLASH_HAL_ERROR")
-        elif(erase_status[0] == Flash_HAL_BUSY):
-            print("\n   Erase Status: Fail  Code: FLASH_HAL_BUSY")
-        elif(erase_status[0] == Flash_HAL_TIMEOUT):
-            print("\n   Erase Status: Fail  Code: FLASH_HAL_TIMEOUT")
-        elif(erase_status[0] == Flash_HAL_INV_ADDR):
-            print("\n   Erase Status: Fail  Code: FLASH_HAL_INV_SECTOR")
-        else:
-            print("\n   Erase Status: Fail  Code: UNKNOWN_ERROR_CODE")
+        for i in range(len(erase_status)):
+            if(erase_status[i] == 0xAA):
+                print("\n Erase Status of Sector", i, ": Success")
+            elif(erase_status[i] == 0xFF):
+                print("\n Erase Status of Sector", i, ": Failure")
+            else:
+                print("\n Erase Status of Sector", i, ": Not requested")  
     else:
         print("Timeout: Bootloader is not responding")
 
@@ -385,21 +379,17 @@ def decode_menu_command_code(command):
         
         ret_value = read_bootloader_reply(data_buf[1])
         
-    elif(command == 6):
-        print("\n   This command is not supported")
     elif(command == 7):
         print("\n   Command == > BL_FLASH_ERASE")
-        data_buf[0] = COMMAND_BL_FLASH_ERASE_DATALEN-1 
-        data_buf[1] = COMMAND_BL_FLASH_ERASE 
-        sector_num = input("\n   Enter sector number(0-7 or 0xFF) here :")
-        sector_num = int(sector_num, 16)
-        if(sector_num != 0xff):
-            nsec=int(input("\n   Enter number of sectors to erase(max 8) here :"))
-        
-        data_buf[2]= sector_num 
-        data_buf[3]= nsec 
+        FRAME_TYPE  = 0
+        data_buf[0] = FRAME_TYPE
+        data_buf[1] = COMMAND_BL_FLASH_ERASE
+        data_buf[2] = COMMAND_BL_FLASH_ERASE_DATALEN
+        sector_num = input("\n   Enter the sectors to be erased as a one byte bit mask (Ex: 11111100 -> erase [Sector 2, Sector 7]): ")
+        sector_num = int(sector_num, 2)
+        data_buf[3]= sector_num 
 
-        crc32       = get_crc(data_buf,COMMAND_BL_FLASH_ERASE_DATALEN-4) 
+        crc32       = get_crc(data_buf,COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_HEADER_BYTES) 
         data_buf[4] = word_to_byte(crc32,1,1) 
         data_buf[5] = word_to_byte(crc32,2,1) 
         data_buf[6] = word_to_byte(crc32,3,1) 
@@ -407,8 +397,8 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_FLASH_ERASE_DATALEN]:
-            Write_to_serial_port(i,COMMAND_BL_FLASH_ERASE_DATALEN-1)
+        for i in data_buf[1:COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_CONTROL_BYTES]:
+            Write_to_serial_port(i, COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_CONTROL_BYTES - 1)
         
         ret_value = read_bootloader_reply(data_buf[1])
         
@@ -600,7 +590,7 @@ def read_bootloader_reply(command_code):
     #read_serial_port(ack,2)
     #ack = ser.read(2)
     ack=read_serial_port(3)
-    if(len(ack) ):
+    if(len(ack)):
         a_array=bytearray(ack)
         #print("read uart:",ack) 
         if (a_array[1]== 0xAA):
@@ -643,7 +633,7 @@ def read_bootloader_reply(command_code):
                 
             ret = 0
          
-        elif a_array[0] == 0x7F:
+        elif a_array[1] == 0xFF:
             #CRC of last command was bad .. received NACK
             print("\n   CRC: FAIL \n")
             ret= -1

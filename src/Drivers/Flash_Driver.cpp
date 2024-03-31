@@ -80,7 +80,7 @@ OperationStatus_t FLASH::MassErase()
 }
 
 /* Erase one or multiple sectors. Sectors are bit encoded in the passed parameter */
-OperationStatus_t FLASH::SectorErase(uint8_t sectorsBitMask)
+OperationStatus_t FLASH::SectorErase(uint8_t& sectorsBitMask)
 {
     OperationStatus_t retVal = ST_OK;
 

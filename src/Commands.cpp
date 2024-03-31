@@ -107,15 +107,59 @@ OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength)
 
 OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength)
 {
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
-    return ST_OK;
+    OperationStatus_t retVal = ST_OK;
+
+    /* Extract Sector to be erased */
+    uint8_t sectors = buffer[0];
+    
+    if(sectors == ALL_SECTORS)
+    {
+        retVal = FLASH::MassErase();
+
+        /* If this point is reached mass erase was not performed successfully*/
+        return retVal;
+    }
+    
+    retVal = FLASH::SectorErase(sectors);
+
+    if(retVal == ST_OK)
+    {
+        for(dataLength = 0; dataLength < FLASH_NUMBER_OF_SECTORS; dataLength++)
+        {
+            /* Check if the sector was requested */
+            if((sectors >> dataLength) % 2u == 1u)
+                buffer[DATA_POS + dataLength] = 0xAA;
+            else
+                buffer[DATA_POS + dataLength] = 0x00;
+        }
+    }
+    else
+    {
+        for(dataLength = 0; dataLength < FLASH_NUMBER_OF_SECTORS; dataLength++)
+        {
+            /* Check if the sector was requested */
+            if((sectors >> dataLength) % 2u == 1u)
+                buffer[DATA_POS + dataLength] = 0xFF;
+            else
+                buffer[DATA_POS + dataLength] = 0x00;
+        }
+    }
+
+    buffer[CMD_POS] = 0x30;
+    buffer[RESP_POS] = 0xAA;
+    buffer[LEN_POS] = dataLength;
+    dataLength += NUMBER_CONTROL_BYTES;
+    
+    retVal = USART2.Transmit((const char*)buffer, dataLength, MAX_DELAY);
+
+    return retVal;
 }
 
 OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength)
 {
     PARAM_UNUSED(buffer);
     PARAM_UNUSED(dataLength);
+    /* Perform erase before writing the memory. Without prior erase the memory will not be correctly written */
     return ST_OK;
 }
 
@@ -135,7 +179,7 @@ OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength)
     buffer[CMD_POS] = 0x60;
     buffer[RESP_POS] = 0xAA;
     buffer[LEN_POS] = dataLength;
-    buffer[LEN_POS + 1] = protStatus;
+    buffer[DATA_POS] = protStatus;
 
     USART2.Transmit((const char*)buffer, dataLength + NUMBER_CONTROL_BYTES, MAX_DELAY);
 
