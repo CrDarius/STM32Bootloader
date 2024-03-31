@@ -265,6 +265,11 @@ OperationStatus_t FLASH::WriteFlash(const void* src, void* dest, uint32_t length
     return retVal;
 }
 
+void FLASH::ReadProtOptionBytes(uint8_t& status)
+{
+    status = (uint8_t)(*((uint32_t*)FLASH_OPTION_BYTES_ADDRESS) >> 8u);
+}
+
 void FLASH::Config(Flash_option_t prefetch, Flash_latency_t latency, Flash_parallel_t paralellism)
 {
     FLASH::prefetch = prefetch;

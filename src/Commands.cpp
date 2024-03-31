@@ -2,6 +2,7 @@
 #include <cstring>
 #include "Commands.h"
 #include "UART_Driver.h"
+#include "Flash_Driver.h"
 
 static const char *bootloaderVersion = "R24.03";
 
@@ -40,7 +41,7 @@ Commands_t serviceTable[] =
     /* Read Status of Flash Memory Sector */
     {
         0x60,
-        BootReadSectorStatus
+        BootReadFlashProtStatus
     },
 
     /* Control Read/Write Protection of Flash Memory */
@@ -125,11 +126,19 @@ OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength)
     return ST_OK;
 }
 
-OperationStatus_t BootReadSectorStatus(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength)
 {
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
-    
+    uint8_t protStatus;
+
+    dataLength = 1u;
+    FLASH::ReadProtOptionBytes(protStatus);
+    buffer[CMD_POS] = 0x60;
+    buffer[RESP_POS] = 0xAA;
+    buffer[LEN_POS] = dataLength;
+    buffer[LEN_POS + 1] = protStatus;
+
+    USART2.Transmit((const char*)buffer, dataLength + NUMBER_CONTROL_BYTES, MAX_DELAY);
+
     return ST_OK;
 }
 
