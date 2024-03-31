@@ -16,7 +16,7 @@ Commands_t serviceTable[] =
     /* Get Chip ID */
     {
         0x20,
-        BootGetCID
+        BootGetMCUID
     },
 
     /* Erase Flash Memory */
@@ -67,22 +67,41 @@ const uint8_t NUMBER_OF_COMMANDS = ( (sizeof(serviceTable))/(sizeof(Commands_t))
 OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength)
 {
     PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
-    uint8_t positiveResponse = 0xAA;
-    uint8_t cmd = 0x10;
+
+    OperationStatus_t retVal = ST_OK;
+    uint8_t positiveResponse = 0xAAu;
+    uint8_t cmd = 0x10u;
     dataLength = strlen(bootloaderVersion);
-    USART2.Transmit((const char*)&cmd, sizeof(cmd), MAX_DELAY);
-    USART2.Transmit((const char*)&positiveResponse, sizeof(positiveResponse), MAX_DELAY);
-    USART2.Transmit((const char*)&dataLength, sizeof(dataLength), MAX_DELAY);
-    USART2.Transmit(bootloaderVersion, dataLength, MAX_DELAY);
-    return ST_OK;
+    retVal = USART2.Transmit((const char*)&cmd, sizeof(cmd), MAX_DELAY);
+    retVal = USART2.Transmit((const char*)&positiveResponse, sizeof(positiveResponse), MAX_DELAY);
+    retVal = USART2.Transmit((const char*)&dataLength, sizeof(dataLength), MAX_DELAY);
+    retVal = USART2.Transmit(bootloaderVersion, dataLength, MAX_DELAY);
+
+    return retVal;
 }
 
-OperationStatus_t BootGetCID(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength)
 {
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
-    return ST_OK;
+    OperationStatus_t retVal = ST_OK;
+    uint8_t idx = 0u;
+    uint8_t positiveResponse = 0xAAu;
+    uint8_t cmd = 0x20u;
+    uint32_t mcu_id = *((uint32_t*)MCUID_REGISTER_ADDRESS);
+    uint16_t device_id = ((uint16_t)mcu_id & 0x0FFFu);
+    uint16_t revision_id = (uint16_t)(mcu_id >> 16u);
+    
+    buffer[NUMBER_CONTROL_BYTES + idx] = (uint8_t)device_id; idx++;
+    buffer[NUMBER_CONTROL_BYTES + idx] = (uint8_t)(device_id >> 8u); idx++;
+    buffer[NUMBER_CONTROL_BYTES + idx] = (uint8_t)revision_id; idx++;
+    buffer[NUMBER_CONTROL_BYTES + idx] = (uint8_t)(revision_id >> 8u); idx++;
+    buffer[0] = cmd;
+    buffer[1] = positiveResponse;
+    buffer[2] = idx;
+    dataLength = NUMBER_CONTROL_BYTES + idx;
+
+    retVal = USART2.Transmit((const char*)buffer, dataLength, MAX_DELAY);
+
+    return retVal;
 }
 
 OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength)
@@ -110,6 +129,7 @@ OperationStatus_t BootReadSectorStatus(uint8_t *buffer, uint8_t dataLength)
 {
     PARAM_UNUSED(buffer);
     PARAM_UNUSED(dataLength);
+    
     return ST_OK;
 }
 

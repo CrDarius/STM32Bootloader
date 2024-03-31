@@ -4,12 +4,12 @@
 #include "Clock_Driver.h"
 #include <cstring>
 
-#define GPIOA         ((GPIO_registers_t*)GPIOA_ADDRESS)
-#define GPIOB         ((GPIO_registers_t*)GPIOB_ADDRESS)
-#define GPIOC         ((GPIO_registers_t*)GPIOC_ADDRESS)
-#define GPIOD         ((GPIO_registers_t*)GPIOD_ADDRESS)
-#define GPIOE         ((GPIO_registers_t*)GPIOE_ADDRESS)
-#define GPIOH         ((GPIO_registers_t*)GPIOH_ADDRESS)
+#define GPIOA         ((volatile GPIO_registers_t*)GPIOA_ADDRESS)
+#define GPIOB         ((volatile GPIO_registers_t*)GPIOB_ADDRESS)
+#define GPIOC         ((volatile GPIO_registers_t*)GPIOC_ADDRESS)
+#define GPIOD         ((volatile GPIO_registers_t*)GPIOD_ADDRESS)
+#define GPIOE         ((volatile GPIO_registers_t*)GPIOE_ADDRESS)
+#define GPIOH         ((volatile GPIO_registers_t*)GPIOH_ADDRESS)
 
 #define ROFFSET       16u
 
@@ -128,7 +128,7 @@ private:
 
 /* Methods area */
 public:
-    GPIO(GPIO_registers_t *GPIO_Address, GPIO_pin_t pin)
+    GPIO(volatile GPIO_registers_t *GPIO_Address, GPIO_pin_t pin)
         :registers(GPIO_Address), pin(pin){}
 
     void Config(GPIO_port_mode_t mode, GPIO_port_output_config_t output_configuration = OUT_PUSHPULL, 

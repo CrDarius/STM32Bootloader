@@ -130,7 +130,7 @@ private:
 
 /* Methods area */
 public:
-    USART(USART_Registers_t *usart_address)
+    USART(volatile USART_Registers_t *usart_address)
         : word_length(WORD_LENTGTH_8BIT), no_stop_bits(NO_STOPBITS_1), baud_rate(9600u),
         parity(NO_PARITY), operation_mode(FULL_DUPLEX_MODE), currentState(USART_AVAILABLE), 
         callbackSwitch(false), pRxCallbackFunc(nullptr), registers(usart_address){}

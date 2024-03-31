@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "general_types.h"
 
+#define NUMBER_CONTROL_BYTES    3u
+
 extern const uint8_t NUMBER_OF_COMMANDS;
 
 typedef struct
@@ -14,7 +16,7 @@ typedef struct
 extern Commands_t serviceTable[];
 
 OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootGetCID(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength);
 OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength);
 OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength);
 OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength);

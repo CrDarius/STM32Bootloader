@@ -1,7 +1,7 @@
 #include "CRC_Driver.h"
 #include "Clock_Driver.h"
 
-volatile CRC_Registers_t * const CRC::registers = (CRC_Registers_t*)CRC_ADDRESS;
+volatile CRC_Registers_t * const CRC::registers = (volatile CRC_Registers_t*)CRC_ADDRESS;
 CRC_state_t CRC::currentState = CRC_NOT_AVAILABLE;
 
 void CRC::CRC_Init(void)

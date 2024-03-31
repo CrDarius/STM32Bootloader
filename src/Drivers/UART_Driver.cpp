@@ -2,9 +2,9 @@
 #include "m_memory.h"
 #include "UART_Driver.h"
 
-USART USART2((USART_Registers_t*)USART2_ADDRESS);
-USART USART1((USART_Registers_t*)USART1_ADDRESS);
-USART USART6((USART_Registers_t*)USART6_ADDRESS);
+USART USART2((volatile USART_Registers_t*)USART2_ADDRESS);
+USART USART1((volatile USART_Registers_t*)USART1_ADDRESS);
+USART USART6((volatile USART_Registers_t*)USART6_ADDRESS);
 
 
 
@@ -237,19 +237,19 @@ OperationStatus_t USART::TransmitIT(const char *message, uint32_t size, uint32_t
         retVal = ST_NOK;
     else
     {
-        if(this->registers == (USART_Registers_t*)USART1_ADDRESS)
+        if(this->registers == (volatile USART_Registers_t*)USART1_ADDRESS)
         {
             USART::USART1_MessageStr.idxTXBufferUSART = 0;
             m_memcpy((uint8_t*)USART::USART1_MessageStr.txBufferUSART, (void*)message, size);
             USART::USART1_MessageStr.txLen = size;
         }
-        else if(this->registers == (USART_Registers_t*)USART2_ADDRESS)
+        else if(this->registers == (volatile USART_Registers_t*)USART2_ADDRESS)
         {
             USART::USART2_MessageStr.idxTXBufferUSART = 0;
             m_memcpy((uint8_t*)USART::USART2_MessageStr.txBufferUSART, message, size);
             USART::USART2_MessageStr.txLen = size;
         }
-        else if(this->registers == (USART_Registers_t*)USART6_ADDRESS)
+        else if(this->registers == (volatile USART_Registers_t*)USART6_ADDRESS)
         {
             USART::USART6_MessageStr.idxTXBufferUSART = 0;
             m_memcpy((uint8_t*)USART::USART6_MessageStr.txBufferUSART, message, size);
@@ -288,19 +288,19 @@ OperationStatus_t USART::ReadIT(uint8_t *buffer, uint32_t size, uint32_t waitTim
         retVal = ST_NOK;
     else
     {
-        if( this->registers == (USART_Registers_t*)USART1_ADDRESS )
+        if( this->registers == (volatile USART_Registers_t*)USART1_ADDRESS )
         {
             USART::USART1_MessageStr.rxLen = size;
             USART::USART1_MessageStr.idxRXBufferUSART = 0;
             USART::USART1_MessageStr.rxBufferUSART = buffer;
         }
-        else if( this->registers == (USART_Registers_t*)USART2_ADDRESS )
+        else if( this->registers == (volatile USART_Registers_t*)USART2_ADDRESS )
         {
             USART::USART2_MessageStr.rxLen = size;
             USART::USART2_MessageStr.idxRXBufferUSART = 0;
             USART::USART2_MessageStr.rxBufferUSART = buffer;
         }
-        else if( this->registers == (USART_Registers_t*)USART6_ADDRESS )
+        else if( this->registers == (volatile USART_Registers_t*)USART6_ADDRESS )
         {
             USART::USART6_MessageStr.rxLen = size;
             USART::USART6_MessageStr.idxRXBufferUSART = 0;
@@ -325,16 +325,16 @@ void USART2_Interrupt(void)
 {
     /* Check which interrupt event triggered the interrupt */
     /* 1. Interrupt was triggered by a sent byte */
-    if ( (((USART_Registers_t*)USART2_ADDRESS)->SR & (1 << USART_SR_BitPos::TXE)) && (((USART_Registers_t*)USART2_ADDRESS)->CR1 & (1 << USART_CR1_BitPos::TXEIE)) )
+    if ( (((volatile USART_Registers_t*)USART2_ADDRESS)->SR & (1 << USART_SR_BitPos::TXE)) && (((volatile USART_Registers_t*)USART2_ADDRESS)->CR1 & (1 << USART_CR1_BitPos::TXEIE)) )
     {
         if(USART::USART2_MessageStr.idxTXBufferUSART < USART::USART2_MessageStr.txLen)
         {
-            ((USART_Registers_t*)USART2_ADDRESS)->DR = USART::USART2_MessageStr.txBufferUSART[USART::USART2_MessageStr.idxTXBufferUSART++];
+            ((volatile USART_Registers_t*)USART2_ADDRESS)->DR = USART::USART2_MessageStr.txBufferUSART[USART::USART2_MessageStr.idxTXBufferUSART++];
         }
         else
         {
             /* The entire message has been sent, deactivate further interrupts triggered by TXE */
-            ((USART_Registers_t*)USART2_ADDRESS)->CR1 &= ~(1 << USART_CR1_BitPos::TXEIE);
+            ((volatile USART_Registers_t*)USART2_ADDRESS)->CR1 &= ~(1 << USART_CR1_BitPos::TXEIE);
             /* Deactivate the NVIC interrupt for USART */
             NVIC::NVIC_DisableInterrupt(USART2_INT_POS);
 
@@ -344,17 +344,17 @@ void USART2_Interrupt(void)
     }
 
     /* 2. Interrupt was triggered by a received byte*/
-    else if( (((USART_Registers_t*)USART2_ADDRESS)->SR & (1 << USART_SR_BitPos::RXNE)) && (((USART_Registers_t*)USART2_ADDRESS)->CR1 & (1 << USART_CR1_BitPos::RXNEIE)) )
+    else if( (((volatile USART_Registers_t*)USART2_ADDRESS)->SR & (1 << USART_SR_BitPos::RXNE)) && (((volatile USART_Registers_t*)USART2_ADDRESS)->CR1 & (1 << USART_CR1_BitPos::RXNEIE)) )
     {
         if(++USART::USART2_MessageStr.idxRXBufferUSART < USART::USART2_MessageStr.rxLen)
-            USART::USART2_MessageStr.rxBufferUSART[USART::USART2_MessageStr.idxRXBufferUSART-1] = ((USART_Registers_t*)USART2_ADDRESS)->DR;
+            USART::USART2_MessageStr.rxBufferUSART[USART::USART2_MessageStr.idxRXBufferUSART-1] = ((volatile USART_Registers_t*)USART2_ADDRESS)->DR;
         else
         {
             /* Read the last transmitted byte */
-            USART::USART2_MessageStr.rxBufferUSART[USART::USART2_MessageStr.idxRXBufferUSART-1] = ((USART_Registers_t*)USART2_ADDRESS)->DR;
+            USART::USART2_MessageStr.rxBufferUSART[USART::USART2_MessageStr.idxRXBufferUSART-1] = ((volatile USART_Registers_t*)USART2_ADDRESS)->DR;
 
             /* The entire message has been received, deactivate further interrupts triggered by RXNEIE*/
-            ((USART_Registers_t*)USART2_ADDRESS)->CR1 &= ~(1 << USART_CR1_BitPos::RXNEIE);
+            ((volatile USART_Registers_t*)USART2_ADDRESS)->CR1 &= ~(1 << USART_CR1_BitPos::RXNEIE);
             /* Deactivate the NVIC interrupt for USART */
             NVIC::NVIC_DisableInterrupt(USART2_INT_POS);
 

@@ -1,6 +1,6 @@
 #include "Clock_Driver.h"
 
-volatile clock_registers_t * const Clock::registers = (clock_registers_t *)RCC_ADDRESS;
+volatile clock_registers_t * const Clock::registers = (volatile clock_registers_t *)RCC_ADDRESS;
 
 
 void Clock::EnableClock_USART2(void)

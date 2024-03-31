@@ -4,6 +4,9 @@
 /* | ARM Cortex Perhiperal Memory Mapping |*/
 /*  -------------------------------------- */
 
+/* CPU-ID */
+const uint32_t CPUID_REGISTER_ADDRESS = 0xE000ED00u;
+
 /* NVIC Memmap */
 const uint32_t NVIC_ISER_ADDRESS   = 0xE000E100u;
 const uint32_t NVIC_ICER_ADDRESS   = 0xE000E180u;

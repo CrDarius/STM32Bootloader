@@ -11,7 +11,6 @@ Flash_HAL_TIMEOUT                                   = 0x03
 Flash_HAL_INV_ADDR                                  = 0x04
 
 #BL Commands
-COMMAND_BL_GET_HELP                                 = 0x52
 
 COMMAND_BL_GET_VER                                  = 0x10
 COMMAND_BL_GET_CID                                  = 0x20
@@ -30,22 +29,22 @@ COMMAND_BL_MY_NEW_COMMAND                           =0x5D
 
 
 #len details of the command
-NUMBER_OF_CONTROL_BYTES                             = 7 # 1 byte  - Frame Type
-                                                        # 1 byte  - CMD
-                                                        # 1 byte  - Data Length
-                                                        # 4 bytes - CRC
-COMMAND_BL_GET_VER_LEN                              =6
-COMMAND_BL_GET_HELP_LEN                             =6
-COMMAND_BL_GET_CID_LEN                              =6
-COMMAND_BL_GET_RDP_STATUS_LEN                       =6
-COMMAND_BL_GO_TO_ADDR_LEN                           =10
-COMMAND_BL_FLASH_ERASE_LEN                          =8
-COMMAND_BL_MEM_WRITE_LEN                            = 11
-COMMAND_BL_EN_R_W_PROTECT_LEN                       =8
-COMMAND_BL_READ_SECTOR_P_STATUS_LEN                 =6
-COMMAND_BL_DIS_R_W_PROTECT_LEN                      =6
-COMMAND_BL_MY_NEW_COMMAND_LEN                       =8
+NUMBER_OF_CONTROL_BYTES                     = 7 # 1 byte  - Frame Type
+                                                # 1 byte  - CMD
+                                                # 1 byte  - Data Length
+                                                # 4 bytes - CRC
+NUMBER_OF_HEADER_BYTES                      = 3
 
+COMMAND_BL_GET_VER_DATALEN                  = 0
+COMMAND_BL_GET_CID_DATALEN                  = 0
+COMMAND_BL_GET_RDP_STATUS_DATALEN           = 0
+COMMAND_BL_GO_TO_ADDR_DATALEN               = 0            
+COMMAND_BL_FLASH_ERASE_DATALEN              = 0            
+COMMAND_BL_MEM_WRITE_DATALEN                = 0            
+COMMAND_BL_EN_R_W_PROTECT_DATALEN           = 0            
+COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN     = 0            
+COMMAND_BL_DIS_R_W_PROTECT_DATALEN          = 0            
+COMMAND_BL_MY_NEW_COMMAND_DATALEN           = 0            
 
 verbose_mode = 1
 mem_write_active =0
@@ -170,19 +169,13 @@ def process_COMMAND_BL_GET_VER(length):
     ascii_ver = ''.join([chr(byte) for byte in ver])
     print("\n   Bootloader Ver. : ", ascii_ver)
 
-def process_COMMAND_BL_GET_HELP(length):
-    #print("reading:", length)
-    value = read_serial_port(length) 
-    reply = bytearray(value)
-    print("\n   Supported Commands :",end=' ')
-    for x in reply:
-        print(hex(x),end=' ')
-    print()
-
 def process_COMMAND_BL_GET_CID(length):
     value = read_serial_port(length)
-    ci = (value[1] << 8 )+ value[0]
-    print("\n   Chip Id. : ",hex(ci))
+    device_id = (value[1] << 8) + value[0]
+    revision_id = (value[3] << 8) + value[2]
+    print("\n   Device ID    : ", hex(device_id))
+    print("\n   Revision ID  : ", hex(revision_id))
+
 
 def process_COMMAND_BL_GET_RDP_STATUS(length):
     value = read_serial_port(length)
@@ -309,12 +302,11 @@ def decode_menu_command_code(command):
         raise SystemExit
     elif(command == 1):
         print("\n   Command == > BL_GET_VER")
-        COMMAND_BL_GET_VER_DATALEN              = 0
         FRAME_TYPE  = 0 
         data_buf[0] = FRAME_TYPE                 
         data_buf[1] = COMMAND_BL_GET_VER
         data_buf[2] = COMMAND_BL_GET_VER_DATALEN 
-        crc32       = get_crc(data_buf, COMMAND_BL_GET_VER_DATALEN + 3)
+        crc32       = get_crc(data_buf, COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_HEADER_BYTES)
         crc32 = crc32 & 0xffffffff
         data_buf[3] = word_to_byte(crc32,1,1) 
         data_buf[4] = word_to_byte(crc32,2,1) 
@@ -324,57 +316,38 @@ def decode_menu_command_code(command):
         
         Write_to_serial_port(data_buf[0],1)
         for i in data_buf[1:COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_CONTROL_BYTES]:
-            Write_to_serial_port(i,COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_CONTROL_BYTES -1)
+            Write_to_serial_port(i, COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_CONTROL_BYTES - 1)
         
 
         ret_value = read_bootloader_reply(data_buf[1])
         
         
-
-    elif(command == 2):
-        print("\n   Command == > BL_GET_HELP")
-        COMMAND_BL_GET_HELP_LEN             =6
-        data_buf[0] = COMMAND_BL_GET_HELP_LEN-1 
-        data_buf[1] = COMMAND_BL_GET_HELP 
-        crc32       = get_crc(data_buf,COMMAND_BL_GET_HELP_LEN-4)
-        crc32 = crc32 & 0xffffffff
-        data_buf[2] = word_to_byte(crc32,1,1) 
-        data_buf[3] = word_to_byte(crc32,2,1) 
-        data_buf[4] = word_to_byte(crc32,3,1) 
-        data_buf[5] = word_to_byte(crc32,4,1) 
-
-        
-        Write_to_serial_port(data_buf[0],1)
-        for i in data_buf[1:COMMAND_BL_GET_HELP_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_GET_HELP_LEN-1)
-        
-
-        ret_value = read_bootloader_reply(data_buf[1])
     elif(command == 3):
         print("\n   Command == > BL_GET_CID")
-        COMMAND_BL_GET_CID_LEN             =6
-        data_buf[0] = COMMAND_BL_GET_CID_LEN-1 
-        data_buf[1] = COMMAND_BL_GET_CID 
-        crc32       = get_crc(data_buf,COMMAND_BL_GET_CID_LEN-4)
+        FRAME_TYPE = 0
+        data_buf[0] = FRAME_TYPE
+        data_buf[1] = COMMAND_BL_GET_CID
+        data_buf[2] =  COMMAND_BL_GET_CID_DATALEN
+        crc32       = get_crc(data_buf, COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_HEADER_BYTES)
         crc32 = crc32 & 0xffffffff
-        data_buf[2] = word_to_byte(crc32,1,1) 
-        data_buf[3] = word_to_byte(crc32,2,1) 
-        data_buf[4] = word_to_byte(crc32,3,1) 
-        data_buf[5] = word_to_byte(crc32,4,1) 
+        data_buf[3] = word_to_byte(crc32,1,1) 
+        data_buf[4] = word_to_byte(crc32,2,1) 
+        data_buf[5] = word_to_byte(crc32,3,1) 
+        data_buf[6] = word_to_byte(crc32,4,1) 
 
         
         Write_to_serial_port(data_buf[0],1)
-        for i in data_buf[1:COMMAND_BL_GET_CID_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_GET_CID_LEN-1)
+        for i in data_buf[1:COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_CONTROL_BYTES]:
+            Write_to_serial_port(i, COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_CONTROL_BYTES - 1)
         
 
         ret_value = read_bootloader_reply(data_buf[1])
 
     elif(command == 4):
         print("\n   Command == > BL_GET_RDP_STATUS")
-        data_buf[0] = COMMAND_BL_GET_RDP_STATUS_LEN-1
+        data_buf[0] = COMMAND_BL_GET_RDP_STATUS_DATALEN-1
         data_buf[1] = COMMAND_BL_GET_RDP_STATUS
-        crc32       = get_crc(data_buf,COMMAND_BL_GET_RDP_STATUS_LEN-4)
+        crc32       = get_crc(data_buf,COMMAND_BL_GET_RDP_STATUS_DATALEN-4)
         crc32 = crc32 & 0xffffffff
         data_buf[2] = word_to_byte(crc32,1,1)
         data_buf[3] = word_to_byte(crc32,2,1)
@@ -383,21 +356,21 @@ def decode_menu_command_code(command):
         
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_GET_RDP_STATUS_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_GET_RDP_STATUS_LEN-1)
+        for i in data_buf[1:COMMAND_BL_GET_RDP_STATUS_DATALEN]:
+            Write_to_serial_port(i,COMMAND_BL_GET_RDP_STATUS_DATALEN-1)
         
         ret_value = read_bootloader_reply(data_buf[1])
     elif(command == 5):
         print("\n   Command == > BL_GO_TO_ADDR")
         go_address  = input("\n   Please enter 4 bytes go address in hex:")
         go_address = int(go_address, 16)
-        data_buf[0] = COMMAND_BL_GO_TO_ADDR_LEN-1 
+        data_buf[0] = COMMAND_BL_GO_TO_ADDR_DATALEN-1 
         data_buf[1] = COMMAND_BL_GO_TO_ADDR 
         data_buf[2] = word_to_byte(go_address,1,1) 
         data_buf[3] = word_to_byte(go_address,2,1) 
         data_buf[4] = word_to_byte(go_address,3,1) 
         data_buf[5] = word_to_byte(go_address,4,1) 
-        crc32       = get_crc(data_buf,COMMAND_BL_GO_TO_ADDR_LEN-4) 
+        crc32       = get_crc(data_buf,COMMAND_BL_GO_TO_ADDR_DATALEN-4) 
         data_buf[6] = word_to_byte(crc32,1,1) 
         data_buf[7] = word_to_byte(crc32,2,1) 
         data_buf[8] = word_to_byte(crc32,3,1) 
@@ -405,8 +378,8 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_GO_TO_ADDR_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_GO_TO_ADDR_LEN-1)
+        for i in data_buf[1:COMMAND_BL_GO_TO_ADDR_DATALEN]:
+            Write_to_serial_port(i,COMMAND_BL_GO_TO_ADDR_DATALEN-1)
         
         ret_value = read_bootloader_reply(data_buf[1])
         
@@ -414,7 +387,7 @@ def decode_menu_command_code(command):
         print("\n   This command is not supported")
     elif(command == 7):
         print("\n   Command == > BL_FLASH_ERASE")
-        data_buf[0] = COMMAND_BL_FLASH_ERASE_LEN-1 
+        data_buf[0] = COMMAND_BL_FLASH_ERASE_DATALEN-1 
         data_buf[1] = COMMAND_BL_FLASH_ERASE 
         sector_num = input("\n   Enter sector number(0-7 or 0xFF) here :")
         sector_num = int(sector_num, 16)
@@ -424,7 +397,7 @@ def decode_menu_command_code(command):
         data_buf[2]= sector_num 
         data_buf[3]= nsec 
 
-        crc32       = get_crc(data_buf,COMMAND_BL_FLASH_ERASE_LEN-4) 
+        crc32       = get_crc(data_buf,COMMAND_BL_FLASH_ERASE_DATALEN-4) 
         data_buf[4] = word_to_byte(crc32,1,1) 
         data_buf[5] = word_to_byte(crc32,2,1) 
         data_buf[6] = word_to_byte(crc32,3,1) 
@@ -432,8 +405,8 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_FLASH_ERASE_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_FLASH_ERASE_LEN-1)
+        for i in data_buf[1:COMMAND_BL_FLASH_ERASE_DATALEN]:
+            Write_to_serial_port(i,COMMAND_BL_FLASH_ERASE_DATALEN-1)
         
         ret_value = read_bootloader_reply(data_buf[1])
         
@@ -483,7 +456,7 @@ def decode_menu_command_code(command):
             #/* 1 byte len + 1 byte command code + 4 byte mem base address
             #* 1 byte payload len + len_to_read is amount of bytes read from file + 4 byte CRC
             #*/
-            mem_write_cmd_total_len = COMMAND_BL_MEM_WRITE_LEN+len_to_read
+            mem_write_cmd_total_len = COMMAND_BL_MEM_WRITE_DATALEN+len_to_read
 
             #first field is "len_to_follow"
             data_buf[0] =mem_write_cmd_total_len-1
@@ -526,17 +499,17 @@ def decode_menu_command_code(command):
         mode=input("\n   Enter Sector Protection Mode(1 or 2 ):")
         mode = int(mode)
         if(mode != 2 and mode != 1):
-            printf("\n   Invalid option : Command Dropped")
+            print("\n   Invalid option : Command Dropped")
             return
         if(mode == 2):
             print("\n   This feature is currently not supported !") 
             return
 
-        data_buf[0] = COMMAND_BL_EN_R_W_PROTECT_LEN-1 
+        data_buf[0] = COMMAND_BL_EN_R_W_PROTECT_DATALEN-1 
         data_buf[1] = COMMAND_BL_EN_R_W_PROTECT 
         data_buf[2] = sector_details 
         data_buf[3] = mode 
-        crc32       = get_crc(data_buf,COMMAND_BL_EN_R_W_PROTECT_LEN-4) 
+        crc32       = get_crc(data_buf,COMMAND_BL_EN_R_W_PROTECT_DATALEN-4) 
         data_buf[4] = word_to_byte(crc32,1,1) 
         data_buf[5] = word_to_byte(crc32,2,1) 
         data_buf[6] = word_to_byte(crc32,3,1) 
@@ -544,8 +517,8 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_EN_R_W_PROTECT_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_EN_R_W_PROTECT_LEN-1)
+        for i in data_buf[1:COMMAND_BL_EN_R_W_PROTECT_DATALEN]:
+            Write_to_serial_port(i,COMMAND_BL_EN_R_W_PROTECT_DATALEN-1)
         
         ret_value = read_bootloader_reply(data_buf[1])
             
@@ -555,10 +528,10 @@ def decode_menu_command_code(command):
         print("\n   This command is not supported")
     elif(command == 11):
         print("\n   Command == > COMMAND_BL_READ_SECTOR_P_STATUS")
-        data_buf[0] = COMMAND_BL_READ_SECTOR_P_STATUS_LEN-1 
+        data_buf[0] = COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN-1 
         data_buf[1] = COMMAND_BL_READ_SECTOR_P_STATUS 
 
-        crc32       = get_crc(data_buf,COMMAND_BL_READ_SECTOR_P_STATUS_LEN-4) 
+        crc32       = get_crc(data_buf,COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN-4) 
         data_buf[2] = word_to_byte(crc32,1,1) 
         data_buf[3] = word_to_byte(crc32,2,1) 
         data_buf[4] = word_to_byte(crc32,3,1) 
@@ -566,8 +539,8 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_READ_SECTOR_P_STATUS_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_READ_SECTOR_P_STATUS_LEN-1)
+        for i in data_buf[1:COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN]:
+            Write_to_serial_port(i,COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN-1)
         
         ret_value = read_bootloader_reply(data_buf[1])
 
@@ -576,9 +549,9 @@ def decode_menu_command_code(command):
         print("\n   This command is not supported")
     elif(command == 13):
         print("\n   Command == > COMMAND_BL_DIS_R_W_PROTECT")
-        data_buf[0] = COMMAND_BL_DIS_R_W_PROTECT_LEN-1 
+        data_buf[0] = COMMAND_BL_DIS_R_W_PROTECT_DATALEN-1 
         data_buf[1] = COMMAND_BL_DIS_R_W_PROTECT 
-        crc32       = get_crc(data_buf,COMMAND_BL_DIS_R_W_PROTECT_LEN-4) 
+        crc32       = get_crc(data_buf,COMMAND_BL_DIS_R_W_PROTECT_DATALEN-4) 
         data_buf[2] = word_to_byte(crc32,1,1) 
         data_buf[3] = word_to_byte(crc32,2,1) 
         data_buf[4] = word_to_byte(crc32,3,1) 
@@ -586,16 +559,16 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_DIS_R_W_PROTECT_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_DIS_R_W_PROTECT_LEN-1)
+        for i in data_buf[1:COMMAND_BL_DIS_R_W_PROTECT_DATALEN]:
+            Write_to_serial_port(i,COMMAND_BL_DIS_R_W_PROTECT_DATALEN-1)
         
         ret_value = read_bootloader_reply(data_buf[1])
         
     elif(command == 14):
         print("\n   Command == > COMMAND_BL_MY_NEW_COMMAND ")
-        data_buf[0] = COMMAND_BL_MY_NEW_COMMAND_LEN-1 
+        data_buf[0] = COMMAND_BL_MY_NEW_COMMAND_DATALEN-1 
         data_buf[1] = COMMAND_BL_MY_NEW_COMMAND 
-        crc32       = get_crc(data_buf,COMMAND_BL_MY_NEW_COMMAND_LEN-4) 
+        crc32       = get_crc(data_buf,COMMAND_BL_MY_NEW_COMMAND_DATALEN-4) 
         data_buf[2] = word_to_byte(crc32,1,1) 
         data_buf[3] = word_to_byte(crc32,2,1) 
         data_buf[4] = word_to_byte(crc32,3,1) 
@@ -603,8 +576,8 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf[0],1)
         
-        for i in data_buf[1:COMMAND_BL_MY_NEW_COMMAND_LEN]:
-            Write_to_serial_port(i,COMMAND_BL_MY_NEW_COMMAND_LEN-1)
+        for i in data_buf[1:COMMAND_BL_MY_NEW_COMMAND_DATALEN]:
+            Write_to_serial_port(i,COMMAND_BL_MY_NEW_COMMAND_DATALEN-1)
         
         ret_value = read_bootloader_reply(data_buf[1])
     else:
@@ -634,10 +607,7 @@ def read_bootloader_reply(command_code):
             #print("command_code:",hex(command_code))
             if (command_code) == COMMAND_BL_GET_VER :
                 process_COMMAND_BL_GET_VER(len_to_follow)
-                
-            elif(command_code) == COMMAND_BL_GET_HELP:
-                process_COMMAND_BL_GET_HELP(len_to_follow)
-                
+                                
             elif(command_code) == COMMAND_BL_GET_CID:
                 process_COMMAND_BL_GET_CID(len_to_follow)
                 

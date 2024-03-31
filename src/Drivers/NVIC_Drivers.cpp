@@ -1,13 +1,13 @@
 #include "NVIC_Drivers.h"
 
 volatile NVIC_Registers_t NVIC::registers = {   
-                                                (uint32_t *)NVIC_ISER_ADDRESS,
-                                                (uint32_t *)NVIC_ICER_ADDRESS,
-                                                (uint32_t *)NVIC_ISPR_ADDRESS,
-                                                (uint32_t *)NVIC_ICPR_ADDRESS,
-                                                (uint32_t *)NVIC_IABR_ADDRESS,
-                                                (uint32_t *)NVIC_IPR_ADDRESS,
-                                                (uint32_t *)NVIC_STIR_ADDRESS
+                                                (volatile uint32_t *)NVIC_ISER_ADDRESS,
+                                                (volatile uint32_t *)NVIC_ICER_ADDRESS,
+                                                (volatile uint32_t *)NVIC_ISPR_ADDRESS,
+                                                (volatile uint32_t *)NVIC_ICPR_ADDRESS,
+                                                (volatile uint32_t *)NVIC_IABR_ADDRESS,
+                                                (volatile uint32_t *)NVIC_IPR_ADDRESS,
+                                                (volatile uint32_t *)NVIC_STIR_ADDRESS
                                             };
 
 

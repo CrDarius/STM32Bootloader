@@ -1,6 +1,6 @@
 #include "SysTick.h"
 
-volatile SYSTICK_registers_t * const SysTick::registers = (SYSTICK_registers_t *)SYST_CSR_ADRESS;
+volatile SYSTICK_registers_t * const SysTick::registers = (volatile SYSTICK_registers_t *)SYST_CSR_ADRESS;
 volatile uint32_t SysTick::globalTime;
 
 void Systick_Interrupt()

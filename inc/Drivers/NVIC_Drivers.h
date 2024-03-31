@@ -28,13 +28,13 @@ typedef enum
 
 typedef struct 
 {
-    uint32_t * const NVIC_ISER;
-    uint32_t * const NVIC_ICER;
-    uint32_t * const NVIC_ISPR;
-    uint32_t * const NVIC_ICPR;
-    uint32_t * const NVIC_IABR;
-    uint32_t * const NVIC_IPR;
-    uint32_t * const STIR;
+    volatile uint32_t * const NVIC_ISER;
+    volatile uint32_t * const NVIC_ICER;
+    volatile uint32_t * const NVIC_ISPR;
+    volatile uint32_t * const NVIC_ICPR;
+    volatile uint32_t * const NVIC_IABR;
+    volatile uint32_t * const NVIC_IPR;
+    volatile uint32_t * const STIR;
 }NVIC_Registers_t;
 
 struct NVIC

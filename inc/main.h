@@ -9,6 +9,7 @@
 #include "GPIO_Driver.h"
 #include "CRC_Driver.h"
 #include "Bootloader_MemMap.h"
+#include "Flash_Driver.h"
 
 
 typedef bool Button_State_t;
@@ -25,6 +26,7 @@ static inline void USART_INIT(void);
 static inline void GPIO_INIT(GPIO& gpio);
 static inline void NVIC_INIT(void);
 static inline void CRC_INIT(void);
+static inline void USART_INIT(void);
 
 extern void BootControl(void);
 
@@ -80,4 +82,10 @@ void NVIC_INIT()
 void CRC_INIT()
 {
     CRC::CRC_Init();
+}
+
+void FLASH_INIT()
+{
+    //FLASH::Config();
+    FLASH::Init();
 }
