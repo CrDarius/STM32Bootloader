@@ -8,6 +8,8 @@
 #define RESP_POS                1u
 #define LEN_POS                 2u
 #define DATA_POS                3u
+#define POSITIVE_RESP           0xAAu
+#define NEGATIVE_RESP           0xFFu
 
 extern const uint8_t NUMBER_OF_COMMANDS;
 
@@ -27,4 +29,4 @@ OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength);
 OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength);
 OperationStatus_t BootControlRWProt(uint8_t *buffer, uint8_t dataLength);
 OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t JumpToApplication(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength);

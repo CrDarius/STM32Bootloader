@@ -205,7 +205,7 @@ OperationStatus_t USART::Read(uint8_t *buffer, uint32_t size, uint32_t waitTime)
     // 1. Set the RE bit to enable the receiver search for a start bit
     this->registers->CR1 |= (1 << USART_CR1_BitPos::RE);
 
-    while(index < size)
+    while( (index < size) )
     {
         if(DELAY_EXCEEDED(startTime, SysTick::GetGlobalTime(), waitTime)) 
         {

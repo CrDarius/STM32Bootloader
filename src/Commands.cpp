@@ -3,6 +3,7 @@
 #include "Commands.h"
 #include "UART_Driver.h"
 #include "Flash_Driver.h"
+#include "BootUtility.h"
 
 static const char *bootloaderVersion = "R24.03";
 
@@ -52,7 +53,7 @@ Commands_t serviceTable[] =
 
     {
         0x80,
-        JumpToApplication
+        BootJumpToApplication
     },
 
     /* Disable Flash Memory Protection */
@@ -70,7 +71,7 @@ OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength)
     PARAM_UNUSED(buffer);
 
     OperationStatus_t retVal = ST_OK;
-    uint8_t positiveResponse = 0xAAu;
+    uint8_t positiveResponse = POSITIVE_RESP;
     uint8_t cmd = 0x10u;
     dataLength = strlen(bootloaderVersion);
     retVal = USART2.Transmit((const char*)&cmd, sizeof(cmd), MAX_DELAY);
@@ -85,7 +86,7 @@ OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength)
 {
     OperationStatus_t retVal = ST_OK;
     uint8_t idx = 0u;
-    uint8_t positiveResponse = 0xAAu;
+    uint8_t positiveResponse = POSITIVE_RESP;
     uint8_t cmd = 0x20u;
     uint32_t mcu_id = *((uint32_t*)MCUID_REGISTER_ADDRESS);
     uint16_t device_id = ((uint16_t)mcu_id & 0x0FFFu);
@@ -95,9 +96,9 @@ OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength)
     buffer[NUMBER_CONTROL_BYTES + idx] = (uint8_t)(device_id >> 8u); idx++;
     buffer[NUMBER_CONTROL_BYTES + idx] = (uint8_t)revision_id; idx++;
     buffer[NUMBER_CONTROL_BYTES + idx] = (uint8_t)(revision_id >> 8u); idx++;
-    buffer[0] = cmd;
-    buffer[1] = positiveResponse;
-    buffer[2] = idx;
+    buffer[CMD_POS] = cmd;
+    buffer[RESP_POS] = positiveResponse;
+    buffer[LEN_POS] = idx;
     dataLength = NUMBER_CONTROL_BYTES + idx;
 
     retVal = USART2.Transmit((const char*)buffer, dataLength, MAX_DELAY);
@@ -116,10 +117,11 @@ OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength)
     {
         retVal = FLASH::MassErase();
 
-        /* If this point is reached mass erase was not performed successfully*/
+        /* If this point is reached mass erase was not performed successfully */
         return retVal;
     }
     
+    /* Call SectorErase from FLASH to erase the bit encoded sectors */
     retVal = FLASH::SectorErase(sectors);
 
     if(retVal == ST_OK)
@@ -128,7 +130,7 @@ OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength)
         {
             /* Check if the sector was requested */
             if((sectors >> dataLength) % 2u == 1u)
-                buffer[DATA_POS + dataLength] = 0xAA;
+                buffer[DATA_POS + dataLength] = POSITIVE_RESP;
             else
                 buffer[DATA_POS + dataLength] = 0x00;
         }
@@ -139,14 +141,14 @@ OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength)
         {
             /* Check if the sector was requested */
             if((sectors >> dataLength) % 2u == 1u)
-                buffer[DATA_POS + dataLength] = 0xFF;
+                buffer[DATA_POS + dataLength] = NEGATIVE_RESP;
             else
                 buffer[DATA_POS + dataLength] = 0x00;
         }
     }
 
     buffer[CMD_POS] = 0x30;
-    buffer[RESP_POS] = 0xAA;
+    buffer[RESP_POS] = POSITIVE_RESP;
     buffer[LEN_POS] = dataLength;
     dataLength += NUMBER_CONTROL_BYTES;
     
@@ -177,7 +179,7 @@ OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength)
     dataLength = 1u;
     FLASH::ReadProtOptionBytes(protStatus);
     buffer[CMD_POS] = 0x60;
-    buffer[RESP_POS] = 0xAA;
+    buffer[RESP_POS] = POSITIVE_RESP;
     buffer[LEN_POS] = dataLength;
     buffer[DATA_POS] = protStatus;
 
@@ -200,9 +202,16 @@ OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength)
     return ST_OK;
 }
 
-OperationStatus_t JumpToApplication(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength)
 {
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
+    dataLength = 0u;
+    buffer[CMD_POS] = 0x80;
+    buffer[RESP_POS] = POSITIVE_RESP;
+    buffer[LEN_POS] = dataLength;
+
+    USART2.Transmit((const char*)buffer, NUMBER_CONTROL_BYTES, MAX_DELAY);
+
+    JumpToUserApp();
+
     return ST_OK;
 }

@@ -9,6 +9,7 @@
 #include "GPIO_Driver.h"
 #include "CRC_Driver.h"
 #include "Bootloader_MemMap.h"
+#include "BootUtility.h"
 #include "Flash_Driver.h"
 
 
@@ -21,7 +22,6 @@ typedef bool Button_State_t;
 
 static inline void SetGlobalTimer(void);
 static inline Button_State_t GetUserButtonState(const GPIO& button);
-static inline void JumpToUserApp(void);
 static inline void USART_INIT(void);
 static inline void GPIO_INIT(GPIO& gpio);
 static inline void NVIC_INIT(void);
@@ -43,21 +43,6 @@ Button_State_t GetUserButtonState(const GPIO &button)
 {
     return (button.GPIO_ReadPin() == PIN_LOW) ? BUTTON_PRESSED : BUTTON_RELEASED; 
 }
-
-static inline void JumpToUserApp()
-{
-    /* Set location of Vector Table for user app */
-    SetVTOR(USER_APP_VT_ADDRESS - BOOTLOADER_VT_ADDRESS);
-
-    /* Set new location for Main Stack Pointer */
-    uint32_t user_sp = *((uint32_t *)USER_APP_VT_ADDRESS); // First 4 bytes from the Vector Table represent the Stack Pointer
-    SetStackPointer(user_sp);
-
-    /* Jump to the reset handler of the user app */
-    void (*fp_handler)(void) = (void (*)(void))USER_APP_RESET_HANDLER_ADDRESS; 
-    fp_handler();
-}
-
 
 void USART_INIT()
 {

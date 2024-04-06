@@ -22,7 +22,7 @@ const uint32_t USART1_ADDRESS = 0x40011000u;
 const uint32_t USART6_ADDRESS = 0x40011400u;
 
 /* MCU FLASH ORGANIZATION */
-const uint32_t FLASH_NUMBER_OF_SECTORS = 8u;
+const uint8_t FLASH_NUMBER_OF_SECTORS = 8u;
 const uint32_t SECTOR0_ADDRESS = 0x08000000u;    /* 16KB */
 const uint32_t SECTOR1_ADDRESS = 0x08004000u;    /* 16KB */
 const uint32_t SECTOR2_ADDRESS = 0x08008000u;    /* 16KB */
