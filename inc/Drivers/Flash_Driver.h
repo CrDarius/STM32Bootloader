@@ -117,6 +117,12 @@ typedef enum
     SUCCESSIVE
 }Flash_WriteReq_t;
 
+typedef enum
+{
+    W_PROTECTION = 0x0F,
+    RW_PROTECTION = 0x1F,
+    NO_PROTECTION = 0xFF
+}Flash_ProtLevel_t;
 
 struct FLASH
 {
@@ -141,6 +147,7 @@ public:
     static OperationStatus_t MassErase(void);
     static OperationStatus_t SectorErase(const uint8_t& sectorsBitMask);
     static OperationStatus_t WriteFlash(const void* src, void* dest, uint32_t length);
+    static Flash_ProtLevel_t GetSectorRWProtection(const uint8_t& sector);
     static void ReadProtOptionBytes(uint8_t& status);
     static void Config(Flash_option_t prefetch, Flash_latency_t latency, Flash_parallel_t paralellism);
     static void Init(void);

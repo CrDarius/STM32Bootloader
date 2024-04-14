@@ -270,6 +270,24 @@ void FLASH::ReadProtOptionBytes(uint8_t& status)
     status = (uint8_t)(*((uint32_t*)FLASH_OPTION_BYTES_ADDRESS) >> 8u);
 }
 
+Flash_ProtLevel_t FLASH::GetSectorRWProtection(const uint8_t& sector)
+{
+    Flash_ProtLevel_t prot = NO_PROTECTION;
+    if(FLASH::registers->FLASH_OPTCR & (1u << FLASH_OPTCR_BitPos::SPRMOD))
+    {
+        if(FLASH::registers->FLASH_OPTCR & (1u << (FLASH_OPTCR_BitPos::nWRP + sector)) ) 
+        {
+            prot = RW_PROTECTION;
+        }
+    }
+    else if( !(FLASH::registers->FLASH_OPTCR & (1u << (FLASH_OPTCR_BitPos::nWRP + sector))) )
+    {
+        prot = W_PROTECTION;
+    }
+
+    return prot;
+}
+
 void FLASH::Config(Flash_option_t prefetch, Flash_latency_t latency, Flash_parallel_t paralellism)
 {
     FLASH::prefetch = prefetch;

@@ -13,54 +13,54 @@ Commands_t serviceTable[] =
 {
     /* Get Bootloader Version */
     {
-        0x10,
+        CMD_CODE_BOOT_GET_VERSION,
         BootGetVersion
     },
 
     /* Get Chip ID */
     {
-        0x20,
+        CMD_CODE_BOOT_GET_MCUID,
         BootGetMCUID
     },
 
     /* Erase Flash Memory */
     {
-        0x30,
+        CMD_CODE_BOOT_FLASH_ERASE,
         BootFlashErase
     },
 
     /* Program Flash Memory */
     {
-        0x40,
+        CMD_CODE_BOOT_FLASH_WRITE,
         BootFlashWrite
     },
     
     /* Verify Flash Memory */
     {
-        0x50,
+        CMD_CODE_BOOT_FLASH_VERIFY,
         BootFlashVerify
     },
 
-    /* Read Status of Flash Memory Sector */
+    /* Read Protection Status of Flash Memory */
     {
-        0x60,
+        CMD_CODE_BOOT_READ_FLASH_PROT_STATUS,
         BootReadFlashProtStatus
     },
 
-    /* Control Read/Write Protection of Flash Memory */
+    /* Get Read/Write Protection of Flash Memory Sectors */
     {
-        0x70,
-        BootControlRWProt
+        CMD_CODE_BOOT_GET_FLASH_RW_PROT,
+        BootGetRWProt
     },
 
     {
-        0x80,
+        CMD_CODE_BOOT_JUMP_TO_APP,
         BootJumpToApplication
     },
 
     /* Disable Flash Memory Protection */
     {
-        0x90,
+        CMD_CODE_BOOT_DISABLE_FLASH_PROT,
         BootDisableProt
     }
 };
@@ -74,7 +74,7 @@ OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength, FrameType_
     PARAM_UNUSED(frameType);
     OperationStatus_t retVal = ST_OK;
     uint8_t positiveResponse = POSITIVE_RESP;
-    uint8_t cmd = 0x10u;
+    uint8_t cmd = CMD_CODE_BOOT_GET_VERSION;
     dataLength = strlen(bootloaderVersion);
     retVal = USART2.Transmit((const char*)&cmd, sizeof(cmd), MAX_DELAY);
     retVal = USART2.Transmit((const char*)&positiveResponse, sizeof(positiveResponse), MAX_DELAY);
@@ -90,7 +90,7 @@ OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength, FrameType_t 
     OperationStatus_t retVal = ST_OK;
     uint8_t idx = 0u;
     uint8_t positiveResponse = POSITIVE_RESP;
-    uint8_t cmd = 0x20u;
+    uint8_t cmd = CMD_CODE_BOOT_GET_MCUID;
     uint32_t mcu_id = *((uint32_t*)MCUID_REGISTER_ADDRESS);
     uint16_t device_id = ((uint16_t)mcu_id & 0x0FFFu);
     uint16_t revision_id = (uint16_t)(mcu_id >> 16u);
@@ -151,7 +151,7 @@ OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength, FrameType_
         }
     }
 
-    buffer[CMD_POS] = 0x30;
+    buffer[CMD_POS] = CMD_CODE_BOOT_FLASH_ERASE;
     buffer[RESP_POS] = POSITIVE_RESP;
     buffer[LEN_POS] = dataLength;
     dataLength += NUMBER_CONTROL_BYTES;
@@ -182,7 +182,7 @@ OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength, FrameType_
         GetSectorsForFlash(binSize, sectorsToBeErased);
 
         /*   3. Bootloader will send back to the Host an ack message containing the sectors to be erased */
-        buffer[CMD_POS] = 0x40;
+        buffer[CMD_POS] = CMD_CODE_BOOT_FLASH_WRITE;
         buffer[RESP_POS] = POSITIVE_RESP;
         dataLength = sizeof(sectorsToBeErased);
         buffer[LEN_POS] = dataLength;
@@ -196,7 +196,7 @@ OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength, FrameType_
         /*   2. Host is not allowed to send any data until Bootloader send one more message to ack that the previously sent sectors have been erased */
         if(retVal == ST_OK)
         {
-            buffer[CMD_POS] = 0x40;
+            buffer[CMD_POS] = CMD_CODE_BOOT_FLASH_WRITE;
             buffer[RESP_POS] = POSITIVE_RESP;
             dataLength = sizeof(sectorsToBeErased);
             buffer[LEN_POS] = dataLength;
@@ -216,7 +216,7 @@ OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength, FrameType_
         /*   2. After each packet the Bootloader needs to send an ack message to the Host to confirm that the packet has been processed */
         if(retVal == ST_OK)
         {
-            buffer[CMD_POS] = 0x40;
+            buffer[CMD_POS] = CMD_CODE_BOOT_FLASH_WRITE;
             buffer[RESP_POS] = POSITIVE_RESP;
             dataLength = 0;
             buffer[LEN_POS] = dataLength;
@@ -255,7 +255,7 @@ OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength, F
 
     dataLength = 1u;
     FLASH::ReadProtOptionBytes(protStatus);
-    buffer[CMD_POS] = 0x60;
+    buffer[CMD_POS] = CMD_CODE_BOOT_READ_FLASH_PROT_STATUS;
     buffer[RESP_POS] = POSITIVE_RESP;
     buffer[LEN_POS] = dataLength;
     buffer[DATA_POS] = protStatus;
@@ -265,11 +265,23 @@ OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength, F
     return ST_OK;
 }
 
-OperationStatus_t BootControlRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
+OperationStatus_t BootGetRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
     PARAM_UNUSED(frameType);
+    dataLength = FLASH_NUMBER_OF_SECTORS;
+
+    for(uint8_t sector = SECTOR0; sector <= SECTOR7; sector++)
+    {
+        buffer[DATA_POS + sector] = FLASH::GetSectorRWProtection(sector);
+    }
+
+    dataLength += NUMBER_CONTROL_BYTES;
+
+    buffer[CMD_POS] = CMD_CODE_BOOT_GET_FLASH_RW_PROT;
+    buffer[RESP_POS] = POSITIVE_RESP;
+    buffer[LEN_POS] = dataLength;
+    USART2.Transmit((const char*)buffer, dataLength, MAX_DELAY);
+
     return ST_OK;
 }
 
@@ -285,7 +297,7 @@ OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength, Fra
 {
     PARAM_UNUSED(frameType);
     dataLength = 0u;
-    buffer[CMD_POS] = 0x80;
+    buffer[CMD_POS] = CMD_CODE_BOOT_JUMP_TO_APP;
     buffer[RESP_POS] = POSITIVE_RESP;
     buffer[LEN_POS] = dataLength;
 
