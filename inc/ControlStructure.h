@@ -3,12 +3,6 @@
 #include "CRC_Driver.h"
 #include "Commands.h"
 
-typedef enum : uint8_t
-{
-    LAST_FRAME,
-    CONSEC_FRAME
-}FrameType_t;
-
 extern void BootControl(void);
 
 static inline void ReceiveCommand(FrameType_t& frameType, uint8_t& cmdCode, uint8_t& dataLength);

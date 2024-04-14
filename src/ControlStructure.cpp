@@ -44,17 +44,11 @@ void BootControl()
         if( (retStatus == ST_OK) && (serviceTable[cmdIdx].serviceHandler != nullptr) )
         {
             /* Call the service handler of the command */
-            retStatus = serviceTable[cmdIdx].serviceHandler(localBuffer, dataLength);
+            retStatus = serviceTable[cmdIdx].serviceHandler(localBuffer, dataLength, frameType);
         }
         if(retStatus != ST_OK)
         {
             /* Command could not be executed successfully. Send negative response */
-            USART2.Transmit((const char *)&retStatus, 1, MAX_DELAY);
-        }
-        else if(frameType == CONSEC_FRAME)
-        {
-        /* If CMD was processed and Frame type is Consecutive Frame send ACK message to tell the host that a new frame can be received */
-            retStatus = ACK;
             USART2.Transmit((const char *)&retStatus, 1, MAX_DELAY);
         }
         else

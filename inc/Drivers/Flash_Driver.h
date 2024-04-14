@@ -6,6 +6,8 @@
 
 #define ALL_SECTORS  0xFFu
 
+#define MAX_SIZE_FLASH_WRITE_REQ    256u
+
 const uint32_t FLASH_OPTION_BYTES_ADDRESS   = 0x1FFFC000u;
 
 /* Flash keys to allow access to control register */
@@ -122,7 +124,6 @@ private:
     static volatile FLASH_Registers_t * const registers; 
 
     /* Pointer used for successive programming of Flash memory */
-    static uint32_t *currentProgLocation; 
     static Flash_option_t prefetch;
     static Flash_latency_t latency;
     static Flash_parallel_t paralellism;
@@ -138,7 +139,7 @@ public:
 
 public:
     static OperationStatus_t MassErase(void);
-    static OperationStatus_t SectorErase(uint8_t& sectorsBitMask);
+    static OperationStatus_t SectorErase(const uint8_t& sectorsBitMask);
     static OperationStatus_t WriteFlash(const void* src, void* dest, uint32_t length);
     static void ReadProtOptionBytes(uint8_t& status);
     static void Config(Flash_option_t prefetch, Flash_latency_t latency, Flash_parallel_t paralellism);

@@ -7,6 +7,8 @@
 
 static const char *bootloaderVersion = "R24.03";
 
+static inline OperationStatus_t GetSectorsForFlash(uint32_t binSize, uint8_t& sectorsToBeErased);
+
 Commands_t serviceTable[] = 
 {
     /* Get Bootloader Version */
@@ -66,10 +68,10 @@ Commands_t serviceTable[] =
 
 const uint8_t NUMBER_OF_COMMANDS = ( (sizeof(serviceTable))/(sizeof(Commands_t)) );
 
-OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
     PARAM_UNUSED(buffer);
-
+    PARAM_UNUSED(frameType);
     OperationStatus_t retVal = ST_OK;
     uint8_t positiveResponse = POSITIVE_RESP;
     uint8_t cmd = 0x10u;
@@ -82,8 +84,9 @@ OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength)
     return retVal;
 }
 
-OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
+    PARAM_UNUSED(frameType);
     OperationStatus_t retVal = ST_OK;
     uint8_t idx = 0u;
     uint8_t positiveResponse = POSITIVE_RESP;
@@ -106,8 +109,9 @@ OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength)
     return retVal;
 }
 
-OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
+    PARAM_UNUSED(frameType);
     OperationStatus_t retVal = ST_OK;
 
     /* Extract Sector to be erased */
@@ -157,23 +161,96 @@ OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength)
     return retVal;
 }
 
-OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
+{
+    OperationStatus_t retVal = ST_OK;
+
+    /* The start address for user application programming is the beginning of sector 2 */
+    static uint8_t* progAddress = (uint8_t*)SECTOR2_ADDRESS;
+    static MemWrite_SM_state state = Get_BIN_Size;
+    static uint8_t sectorsToBeErased = 0u;
+    uint32_t binSize = 0u;
+
+    switch (state)
+    {
+    case Get_BIN_Size:
+        /* State 1 - Get total size that will be programmed */
+        /*   1. First of all Host will send a consecutive frame containing the size to be programmed */
+        binSize = ( (uint32_t)(buffer[0]) | (uint32_t)(buffer[1] << 8u) | (uint32_t)(buffer[2] << 16u) | (uint32_t)(buffer[3] << 24u) );
+
+        /*   2. Based on the received size, the Bootloader will compute how many sectors of memory it needs to erase before starting the programming */
+        GetSectorsForFlash(binSize, sectorsToBeErased);
+
+        /*   3. Bootloader will send back to the Host an ack message containing the sectors to be erased */
+        buffer[CMD_POS] = 0x40;
+        buffer[RESP_POS] = POSITIVE_RESP;
+        dataLength = sizeof(sectorsToBeErased);
+        buffer[LEN_POS] = dataLength;
+        buffer[DATA_POS] = sectorsToBeErased;
+        dataLength += NUMBER_CONTROL_BYTES;
+        USART2.Transmit((const char *)buffer, dataLength, MAX_DELAY);
+
+        /* State 2 - Erase */
+        /*   1. Bootloader starts the erasing procedure */
+        retVal = FLASH::SectorErase(sectorsToBeErased);
+        /*   2. Host is not allowed to send any data until Bootloader send one more message to ack that the previously sent sectors have been erased */
+        if(retVal == ST_OK)
+        {
+            buffer[CMD_POS] = 0x40;
+            buffer[RESP_POS] = POSITIVE_RESP;
+            dataLength = sizeof(sectorsToBeErased);
+            buffer[LEN_POS] = dataLength;
+            buffer[DATA_POS] = sectorsToBeErased;
+            dataLength += NUMBER_CONTROL_BYTES;
+            USART2.Transmit((const char *)buffer, dataLength, MAX_DELAY);
+            state = Write_FLASH_Sectors;
+        }
+        
+        break;
+
+    case Write_FLASH_Sectors:
+        /* State 3 - Programming */
+        /*   1. Once Host received the ack it will start sending packets of data to be written into memory, max 255 bytes at a time */
+        retVal = FLASH::WriteFlash(buffer, progAddress, dataLength);
+        progAddress += dataLength;
+        /*   2. After each packet the Bootloader needs to send an ack message to the Host to confirm that the packet has been processed */
+        if(retVal == ST_OK)
+        {
+            buffer[CMD_POS] = 0x40;
+            buffer[RESP_POS] = POSITIVE_RESP;
+            dataLength = 0;
+            buffer[LEN_POS] = dataLength;
+            dataLength += NUMBER_CONTROL_BYTES;
+            USART2.Transmit((const char *)buffer, dataLength, MAX_DELAY);
+        }
+        if(frameType == LAST_FRAME)
+        {
+            /* State 4 - Reset to default */
+            /*   1. After Bootloader received the last data packet from the Host, it will reset all the parameters to the default value (offset -> 0, progStartAddress...) */
+            progAddress = (uint8_t*)SECTOR2_ADDRESS;
+            state = Get_BIN_Size;
+            sectorsToBeErased = 0u;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return retVal;
+}
+
+OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
     PARAM_UNUSED(buffer);
     PARAM_UNUSED(dataLength);
-    /* Perform erase before writing the memory. Without prior erase the memory will not be correctly written */
+    PARAM_UNUSED(frameType);
     return ST_OK;
 }
 
-OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
-    return ST_OK;
-}
-
-OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength)
-{
+    PARAM_UNUSED(frameType);
     uint8_t protStatus;
 
     dataLength = 1u;
@@ -188,22 +265,25 @@ OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength)
     return ST_OK;
 }
 
-OperationStatus_t BootControlRWProt(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootControlRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
     PARAM_UNUSED(buffer);
     PARAM_UNUSED(dataLength);
+    PARAM_UNUSED(frameType);
     return ST_OK;
 }
 
-OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
     PARAM_UNUSED(buffer);
     PARAM_UNUSED(dataLength);
+    PARAM_UNUSED(frameType);
     return ST_OK;
 }
 
-OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength)
+OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
+    PARAM_UNUSED(frameType);
     dataLength = 0u;
     buffer[CMD_POS] = 0x80;
     buffer[RESP_POS] = POSITIVE_RESP;
@@ -214,4 +294,25 @@ OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength)
     JumpToUserApp();
 
     return ST_OK;
+}
+
+static inline OperationStatus_t GetSectorsForFlash(uint32_t binSize, uint8_t& sectorsToBeErased)
+{
+    OperationStatus_t retVal = ST_OK;
+    uint32_t totalSizeRequired = 0u;
+    uint8_t sector = 0u;
+
+    sectorsToBeErased = 0u;
+    for(sector = SECTOR2; sector <= SECTOR7; sector++)
+    {
+        sectorsToBeErased |= (1u << sector);
+        totalSizeRequired += SECTORS_SIZE[sector];
+        if(binSize < totalSizeRequired)
+            break;
+    }
+
+    if(sector > SECTOR7)
+        retVal = ST_NOK;
+
+    return retVal;
 }

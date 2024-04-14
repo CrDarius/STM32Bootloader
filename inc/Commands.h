@@ -13,20 +13,34 @@
 
 extern const uint8_t NUMBER_OF_COMMANDS;
 
+typedef enum : uint8_t
+{
+    LAST_FRAME,
+    CONSEC_FRAME
+}FrameType_t;
+
+typedef enum : uint8_t
+{
+    Get_BIN_Size,
+    Erase_FLASH_Sectors,
+    Write_FLASH_Sectors,
+    Reset_STATE
+}MemWrite_SM_state;
+
 typedef struct
 {
     uint8_t serviceCode;
-    OperationStatus_t (*serviceHandler) (uint8_t *buffer, uint8_t dataLength);   
+    OperationStatus_t (*serviceHandler) (uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);   
 }Commands_t;
 
 extern Commands_t serviceTable[];
 
-OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootControlRWProt(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength);
-OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength);
+OperationStatus_t BootGetVersion(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootGetMCUID(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootFlashErase(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootControlRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);

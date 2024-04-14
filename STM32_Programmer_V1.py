@@ -26,36 +26,45 @@ COMMAND_BL_READ_SECTOR_P_STATUS                     =0x56
 
 
 #len details of the command
-NUMBER_OF_CONTROL_BYTES                     = 7 # 1 byte  - Frame Type
-                                                # 1 byte  - CMD
-                                                # 1 byte  - Data Length
-                                                # 4 bytes - CRC
-NUMBER_OF_HEADER_BYTES                      = 3
+NUMBER_OF_COMMAND_BYTES                     = 1
+NUMBER_OF_FRAME_TYPE_BYTES                  = 1
+NUMBER_OF_DATALEN_BYTES                     = 1
+NUMBER_OF_CRC_BYTES                         = 4
+NUMBER_OF_HEADER_BYTES                      = NUMBER_OF_FRAME_TYPE_BYTES + NUMBER_OF_COMMAND_BYTES + NUMBER_OF_DATALEN_BYTES
+NUMBER_OF_CONTROL_BYTES                     = NUMBER_OF_HEADER_BYTES + NUMBER_OF_CRC_BYTES
+
+PROG_BLOCK_MAX_SIZE                         = 255
 
 COMMAND_BL_GET_VER_DATALEN                  = 0
 COMMAND_BL_GET_CID_DATALEN                  = 0
 COMMAND_BL_GET_RDP_STATUS_DATALEN           = 0
-COMMAND_BL_FLASH_ERASE_DATALEN              = 1            
-COMMAND_BL_MEM_WRITE_DATALEN                = 0            
-COMMAND_BL_EN_R_W_PROTECT_DATALEN           = 0            
+COMMAND_BL_FLASH_ERASE_DATALEN              = 1
+COMMAND_BL_MEM_WRITE_DATALEN                = 0
+COMMAND_BL_EN_R_W_PROTECT_DATALEN           = 0
 COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN     = 0
-COMMAND_BL_JMP_TO_USERAPP_DATALEN           = 0            
-COMMAND_BL_DIS_R_W_PROTECT_DATALEN          = 0             
+COMMAND_BL_JMP_TO_USERAPP_DATALEN           = 0
+COMMAND_BL_DIS_R_W_PROTECT_DATALEN          = 0
+
+LAST_FRAME                                  = 0
+CONSECUTIVE_FRAME                           = 1
+
+POS_FRAME_TYPE                              = 0
+POS_COMMAND                                 = 1
+POS_DATALEN                                 = 2
+POS_STATUS                                  = 1
 
 verbose_mode = 1
 mem_write_active =0
 
 #----------------------------- file ops----------------------------------------
 
-def calc_file_len():
-    size = os.path.getsize("user_app.bin")
+def calc_file_len(file_path):
+    size = os.path.getsize(file_path)
     return size
 
-def open_the_file():
+def open_the_file(file_path):
     global bin_file
-    bin_file = open('user_app.bin','rb')
-    #read = bin_file.read()
-    #global file_contents = bytearray(read)
+    bin_file = open(file_path,'rb')
 
 def read_the_file():
     pass
@@ -143,15 +152,15 @@ def Close_serial_port():
 def purge_serial_port():
     ser.reset_input_buffer()
     
-def Write_to_serial_port(value, *length):
-        data = struct.pack('>B', value)
-        if (verbose_mode):
-            value = bytearray(data)
-            #print("   "+hex(value[0]), end='')
-            print("   "+"0x{:02x}".format(value[0]),end=' ')
-        if(mem_write_active and (not verbose_mode)):
-                print("#",end=' ')
-        ser.write(data)
+def Write_to_serial_port(data_buf, len):
+        for value in data_buf[0 : len]:
+            data = struct.pack('>B', value)
+            if (verbose_mode):
+                value = bytearray(data)
+                print("   "+"0x{:02x}".format(value[0]),end=' ')
+            if((mem_write_active == 2) and (not verbose_mode)):
+                    print("#",end=' ')
+            ser.write(data)
 
 
         
@@ -190,23 +199,27 @@ def process_COMMAND_BL_FLASH_ERASE(length):
         print("Timeout: Bootloader is not responding")
 
 def process_COMMAND_BL_MEM_WRITE(length):
-    write_status=0
+    
     value = read_serial_port(length)
-    write_status = bytearray(value)
-    if(write_status[0] == Flash_HAL_OK):
-        print("\n   Write_status: FLASH_HAL_OK")
-    elif(write_status[0] == Flash_HAL_ERROR):
-        print("\n   Write_status: FLASH_HAL_ERROR")
-    elif(write_status[0] == Flash_HAL_BUSY):
-        print("\n   Write_status: FLASH_HAL_BUSY")
-    elif(write_status[0] == Flash_HAL_TIMEOUT):
-        print("\n   Write_status: FLASH_HAL_TIMEOUT")
-    elif(write_status[0] == Flash_HAL_INV_ADDR):
-        print("\n   Write_status: FLASH_HAL_INV_ADDR")
+    value_int = int.from_bytes(value, byteorder='little')
+    
+    #The Bootloader will erase the necessary sectors before programming them
+    if(mem_write_active == 0):
+        print("\n   The following sectors will be erased: ")
+        for i in range(7):
+            if((value_int >> i) & 1):
+                print("\n Sector: ", i)
+    elif(mem_write_active == 1):
+        print("\n###########################################")
+        for i in range(7):
+            if((value_int >> i) & 1):
+                print("\n SECTOR: ", i, "ERASED")
     else:
-        print("\n   Write_status: UNKNOWN_ERROR")
-    print("\n")
-
+        print("\n Block successfully programmed")
+        
+        
+    
+    
 protection_mode= [ "Write Protection", "Read/Write Protection","No protection" ]
 def protection_type(status,n):
     if( status & (1 << 15) ):
@@ -229,7 +242,6 @@ def process_COMMAND_BL_READ_SECTOR_STATUS(length):
 
     value = read_serial_port(length)
     s_status = bytearray(value)
-    #s_status.flash_sector_status = (uint16_t)(status[1] << 8 | status[0] )
     print("\n   Sector Status : ",s_status[0])
     print("\n  ====================================")
     print("\n  Sector                               \tProtection") 
@@ -268,170 +280,152 @@ def process_COMMAND_BL_JMP_TO_USERAPP(length):
 
 
 def decode_menu_command_code(command):
+    global mem_write_active
     ret_value = 0
     data_buf = []
-    for i in range(255):
+    for i in range(512):
         data_buf.append(0)
     
     if(command  == 0 ):
         print("\n   Exiting...!")
         raise SystemExit
+    
     elif(command == 1):
         print("\n   Command == > BL_GET_VER")
-        FRAME_TYPE  = 0 
-        data_buf[0] = FRAME_TYPE                 
-        data_buf[1] = COMMAND_BL_GET_VER
-        data_buf[2] = COMMAND_BL_GET_VER_DATALEN 
-        crc32       = get_crc(data_buf, COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_HEADER_BYTES)
-        crc32 = crc32 & 0xffffffff
-        data_buf[3] = word_to_byte(crc32,1,1) 
-        data_buf[4] = word_to_byte(crc32,2,1) 
-        data_buf[5] = word_to_byte(crc32,3,1) 
-        data_buf[6] = word_to_byte(crc32,4,1) 
+        FRAME_TYPE  = LAST_FRAME
+        data_buf[POS_FRAME_TYPE] = FRAME_TYPE                 
+        data_buf[POS_COMMAND] = COMMAND_BL_GET_VER
+        data_buf[POS_DATALEN] = COMMAND_BL_GET_VER_DATALEN 
 
-        
-        Write_to_serial_port(data_buf[0],1)
-        for i in data_buf[1:COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_CONTROL_BYTES]:
-            Write_to_serial_port(i, COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_CONTROL_BYTES - 1)
+        apply_4byte_crc(data_buf, COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_HEADER_BYTES)
+
+        Write_to_serial_port(data_buf, COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
         ret_value = read_bootloader_reply(data_buf[1])
         
     elif(command == 2):
         print("\n   Command == > BL_GET_CID")
-        FRAME_TYPE = 0
-        data_buf[0] = FRAME_TYPE
-        data_buf[1] = COMMAND_BL_GET_CID
-        data_buf[2] =  COMMAND_BL_GET_CID_DATALEN
-        crc32       = get_crc(data_buf, COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_HEADER_BYTES)
-        crc32 = crc32 & 0xffffffff
-        data_buf[3] = word_to_byte(crc32,1,1) 
-        data_buf[4] = word_to_byte(crc32,2,1) 
-        data_buf[5] = word_to_byte(crc32,3,1) 
-        data_buf[6] = word_to_byte(crc32,4,1) 
+        FRAME_TYPE = LAST_FRAME
+        data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+        data_buf[POS_COMMAND] = COMMAND_BL_GET_CID
+        data_buf[POS_DATALEN] =  COMMAND_BL_GET_CID_DATALEN
 
-        
-        Write_to_serial_port(data_buf[0],1)
-        for i in data_buf[1:COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_CONTROL_BYTES]:
-            Write_to_serial_port(i, COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_CONTROL_BYTES - 1)
-        
+        apply_4byte_crc(data_buf, COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_HEADER_BYTES)
+
+        Write_to_serial_port(data_buf, COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_CONTROL_BYTES)
 
         ret_value = read_bootloader_reply(data_buf[1])
 
     elif(command == 3):
         print("\n   Command == > BL_GET_RDP_STATUS")
-        FRAME_TYPE = 0
-        data_buf[0] = FRAME_TYPE
-        data_buf[1] = COMMAND_BL_GET_RDP_STATUS
-        data_buf[2] = COMMAND_BL_GET_RDP_STATUS_DATALEN
-        crc32       = get_crc(data_buf,COMMAND_BL_GET_RDP_STATUS_DATALEN + NUMBER_OF_HEADER_BYTES)
-        crc32 = crc32 & 0xffffffff
-        data_buf[3] = word_to_byte(crc32,1,1)
-        data_buf[4] = word_to_byte(crc32,2,1)
-        data_buf[5] = word_to_byte(crc32,3,1)
-        data_buf[6] = word_to_byte(crc32,4,1)
+        FRAME_TYPE = LAST_FRAME
+        data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+        data_buf[POS_COMMAND] = COMMAND_BL_GET_RDP_STATUS
+        data_buf[POS_DATALEN] = COMMAND_BL_GET_RDP_STATUS_DATALEN
+
+        apply_4byte_crc(data_buf, COMMAND_BL_GET_RDP_STATUS_DATALEN + NUMBER_OF_HEADER_BYTES)
         
-        Write_to_serial_port(data_buf[0],1)
-        
-        for i in data_buf[1:COMMAND_BL_GET_RDP_STATUS_DATALEN + NUMBER_OF_CONTROL_BYTES]:
-            Write_to_serial_port(i,COMMAND_BL_GET_RDP_STATUS_DATALEN + NUMBER_OF_CONTROL_BYTES -1)
+        Write_to_serial_port(data_buf, COMMAND_BL_GET_RDP_STATUS_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
         ret_value = read_bootloader_reply(data_buf[1])
     
     elif(command == 4):
         print("\n   Command == > BL_FLASH_ERASE")
-        FRAME_TYPE  = 0
-        data_buf[0] = FRAME_TYPE
-        data_buf[1] = COMMAND_BL_FLASH_ERASE
-        data_buf[2] = COMMAND_BL_FLASH_ERASE_DATALEN
+        FRAME_TYPE  = LAST_FRAME
+        data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+        data_buf[POS_COMMAND] = COMMAND_BL_FLASH_ERASE
+        data_buf[POS_DATALEN] = COMMAND_BL_FLASH_ERASE_DATALEN
         sector_num = input("\n   Enter the sectors to be erased as a one byte bit mask (Ex: 11111100 -> erase [Sector 2, Sector 7]): ")
         sector_num = int(sector_num, 2)
-        data_buf[3]= sector_num 
+        data_buf[POS_DATALEN + 1]= sector_num 
 
-        crc32       = get_crc(data_buf,COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_HEADER_BYTES) 
-        data_buf[4] = word_to_byte(crc32,1,1) 
-        data_buf[5] = word_to_byte(crc32,2,1) 
-        data_buf[6] = word_to_byte(crc32,3,1) 
-        data_buf[7] = word_to_byte(crc32,4,1) 
+        apply_4byte_crc(data_buf, COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_HEADER_BYTES)
 
-        Write_to_serial_port(data_buf[0],1)
-        
-        for i in data_buf[1:COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_CONTROL_BYTES]:
-            Write_to_serial_port(i, COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_CONTROL_BYTES - 1)
+        Write_to_serial_port(data_buf, COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
         ret_value = read_bootloader_reply(data_buf[1])
-        
+
     elif(command == 5):
-        print("\n   Command == > BL_MEM_WRITE")
-        bytes_remaining=0
-        t_len_of_file=0
-        bytes_so_far_sent = 0
-        len_to_read=0
-        base_mem_address=0
+            #../UserApp_Bootloader/bin/binary.bin
+            print("\n   Command == > BL_MEM_WRITE")
+            bytes_remaining=0
+            t_len_of_file=0
+            bytes_so_far_sent = 0
+            len_to_read=0
 
-        data_buf[1] = COMMAND_BL_MEM_WRITE
 
-        #First get the total number of bytes in the .bin file.
-        t_len_of_file =calc_file_len()
+            #First get the total number of bytes in the .bin file.
+            file_path = input("Enter the path and the file: ")
+            t_len_of_file =calc_file_len(file_path)
 
-        #keep opening the file
-        open_the_file()
+            #Send the total size to the Bootloader
+            file_len_byte_aray = t_len_of_file.to_bytes(4, byteorder = 'little')
+            FRAME_TYPE = CONSECUTIVE_FRAME
+            data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+            data_buf[POS_COMMAND] = COMMAND_BL_MEM_WRITE
+            data_buf[POS_DATALEN] = len(file_len_byte_aray)
+            data_buf[NUMBER_OF_HEADER_BYTES] = file_len_byte_aray[0]
+            data_buf[NUMBER_OF_HEADER_BYTES + 1] = file_len_byte_aray[1]
+            data_buf[NUMBER_OF_HEADER_BYTES + 2] = file_len_byte_aray[2]
+            data_buf[NUMBER_OF_HEADER_BYTES + 3] = file_len_byte_aray[3]
 
-        bytes_remaining = t_len_of_file - bytes_so_far_sent
+            apply_4byte_crc(data_buf, NUMBER_OF_HEADER_BYTES + len(file_len_byte_aray))
 
-        base_mem_address = input("\n   Enter the memory write address here :")
-        base_mem_address = int(base_mem_address, 16)
-        global mem_write_active
-        while(bytes_remaining):
-            mem_write_active=1
-            if(bytes_remaining >= 128):
-                len_to_read = 128
-            else:
-                len_to_read = bytes_remaining
-            #get the bytes in to buffer by reading file
-            for x in range(len_to_read):
-                file_read_value = bin_file.read(1)
-                file_read_value = bytearray(file_read_value)
-                data_buf[7+x]= int(file_read_value[0])
-            #read_the_file(&data_buf[7],len_to_read) 
-            #print("\n   base mem address = \n",base_mem_address, hex(base_mem_address)) 
+            Write_to_serial_port(data_buf, len(file_len_byte_aray) + NUMBER_OF_CONTROL_BYTES)
 
-            #populate base mem address
-            data_buf[2] = word_to_byte(base_mem_address,1,1)
-            data_buf[3] = word_to_byte(base_mem_address,2,1)
-            data_buf[4] = word_to_byte(base_mem_address,3,1)
-            data_buf[5] = word_to_byte(base_mem_address,4,1)
-
-            data_buf[6] = len_to_read
-
-            #/* 1 byte len + 1 byte command code + 4 byte mem base address
-            #* 1 byte payload len + len_to_read is amount of bytes read from file + 4 byte CRC
-            #*/
-            mem_write_cmd_total_len = COMMAND_BL_MEM_WRITE_DATALEN+len_to_read
-
-            #first field is "len_to_follow"
-            data_buf[0] =mem_write_cmd_total_len-1
-
-            crc32       = get_crc(data_buf,mem_write_cmd_total_len-4)
-            data_buf[7+len_to_read] = word_to_byte(crc32,1,1)
-            data_buf[8+len_to_read] = word_to_byte(crc32,2,1)
-            data_buf[9+len_to_read] = word_to_byte(crc32,3,1)
-            data_buf[10+len_to_read] = word_to_byte(crc32,4,1)
-
-            #update base mem address for the next loop
-            base_mem_address+=len_to_read
-
-            Write_to_serial_port(data_buf[0],1)
-        
-            for i in data_buf[1:mem_write_cmd_total_len]:
-                Write_to_serial_port(i,mem_write_cmd_total_len-1)
-
-            bytes_so_far_sent+=len_to_read
-            bytes_remaining = t_len_of_file - bytes_so_far_sent
-            print("\n   bytes_so_far_sent:{0} -- bytes_remaining:{1}\n".format(bytes_so_far_sent,bytes_remaining)) 
-        
+            #Wait to receive the ack containing the sectors to be erased
             ret_value = read_bootloader_reply(data_buf[1])
-        mem_write_active=0
+            if(ret_value != 0):
+                print("\n Error. Host did not receive the sectors to be erased!!")
+                return
+            
+            #Move the mem_write to the next operation (receive the erased sectors)
+            mem_write_active = 1
 
+            #Wait to receive the confirmation that the sectors have been erased
+            ret_value = read_bootloader_reply(data_buf[1])
+            if(ret_value != 0):
+                print("\n Error. Bootloader did not erase the sectors successfuly!!")
+                return
+
+            open_the_file(file_path)
+
+            bytes_remaining = t_len_of_file - bytes_so_far_sent
+
+            while(bytes_remaining):
+                #Move the mem_write to the next operation (send blocks of data to be flashed)
+                mem_write_active = 2
+                if(bytes_remaining >= PROG_BLOCK_MAX_SIZE):
+                    FRAME_TYPE = CONSECUTIVE_FRAME
+                    len_to_read = PROG_BLOCK_MAX_SIZE
+                else:
+                    FRAME_TYPE = LAST_FRAME
+                    len_to_read = bytes_remaining
+                #get the bytes in to buffer by reading file
+                for x in range(len_to_read):
+                    file_read_value = bin_file.read(1)
+                    file_read_value = bytearray(file_read_value)
+                    data_buf[POS_DATALEN + 1 + x]= int(file_read_value[0])
+
+                #first field is "len_to_follow"
+                data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+                data_buf[POS_COMMAND] = COMMAND_BL_MEM_WRITE
+                data_buf[POS_DATALEN] = len_to_read
+
+                apply_4byte_crc(data_buf, NUMBER_OF_HEADER_BYTES + len_to_read)
+                
+
+                Write_to_serial_port(data_buf, NUMBER_OF_CONTROL_BYTES + len_to_read)
+
+                bytes_so_far_sent+=len_to_read
+                bytes_remaining = t_len_of_file - bytes_so_far_sent
+                print("\n   bytes_so_far_sent:{0} -- bytes_remaining:{1}\n".format(bytes_so_far_sent,bytes_remaining)) 
+
+                ret_value = read_bootloader_reply(data_buf[1])
+                if(ret_value != 0):
+                    print("\n Bootloader did not manage to flash this block!")
+                
+            mem_write_active=0
             
     
     elif(command == 6):
@@ -443,7 +437,6 @@ def decode_menu_command_code(command):
             sector_numbers[x]=int(input("\n   Enter sector number[{0}]: ".format(x+1) ))
             sector_details = sector_details | (1 << sector_numbers[x])
 
-        #print("Sector details",sector_details)
         print("\n   Mode:Flash sectors Write Protection: 1")
         print("\n   Mode:Flash sectors Read/Write Protection: 2")
         mode=input("\n   Enter Sector Protection Mode(1 or 2 ):")
@@ -459,54 +452,36 @@ def decode_menu_command_code(command):
         data_buf[1] = COMMAND_BL_EN_R_W_PROTECT 
         data_buf[2] = sector_details 
         data_buf[3] = mode 
-        crc32       = get_crc(data_buf,COMMAND_BL_EN_R_W_PROTECT_DATALEN-4) 
-        data_buf[4] = word_to_byte(crc32,1,1) 
-        data_buf[5] = word_to_byte(crc32,2,1) 
-        data_buf[6] = word_to_byte(crc32,3,1) 
-        data_buf[7] = word_to_byte(crc32,4,1) 
 
-        Write_to_serial_port(data_buf[0],1)
+        apply_4byte_crc(data_buf, COMMAND_BL_EN_R_W_PROTECT_DATALEN + NUMBER_OF_HEADER_BYTES)
         
-        for i in data_buf[1:COMMAND_BL_EN_R_W_PROTECT_DATALEN]:
-            Write_to_serial_port(i,COMMAND_BL_EN_R_W_PROTECT_DATALEN-1)
+        Write_to_serial_port(data_buf, COMMAND_BL_EN_R_W_PROTECT_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
         ret_value = read_bootloader_reply(data_buf[1])
             
     elif(command == 7):
         print("\n   Command == > COMMAND_BL_READ_SECTOR_P_STATUS")
-        FRAME_TYPE  = 0
+        FRAME_TYPE  = LAST_FRAME
         data_buf[0] = FRAME_TYPE
         data_buf[1] = COMMAND_BL_READ_SECTOR_P_STATUS
         data_buf[2] = COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN
-        crc32       = get_crc(data_buf,COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN + NUMBER_OF_HEADER_BYTES) 
-        data_buf[3] = word_to_byte(crc32,1,1) 
-        data_buf[4] = word_to_byte(crc32,2,1) 
-        data_buf[5] = word_to_byte(crc32,3,1) 
-        data_buf[6] = word_to_byte(crc32,4,1) 
 
-        Write_to_serial_port(data_buf[0],1)
-        
-        for i in data_buf[1:COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN + NUMBER_OF_CONTROL_BYTES]:
-            Write_to_serial_port(i,COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN + NUMBER_OF_CONTROL_BYTES -1)
+        apply_4byte_crc(data_buf, COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN + NUMBER_OF_HEADER_BYTES)
+
+        Write_to_serial_port(data_buf, COMMAND_BL_READ_SECTOR_P_STATUS_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
         ret_value = read_bootloader_reply(data_buf[1])
 
     elif(command == 8):
         print("\n   Command == > COMMAND_BL_JMP_TO_USERAPP")
-        FRAME_TYPE  = 0
+        FRAME_TYPE  = LAST_FRAME
         data_buf[0] = FRAME_TYPE
         data_buf[1] = COMMAND_BL_JMP_TO_USERAPP
         data_buf[2] = COMMAND_BL_JMP_TO_USERAPP_DATALEN
-        crc32       = get_crc(data_buf,COMMAND_BL_JMP_TO_USERAPP_DATALEN + NUMBER_OF_HEADER_BYTES) 
-        data_buf[3] = word_to_byte(crc32,1,1) 
-        data_buf[4] = word_to_byte(crc32,2,1) 
-        data_buf[5] = word_to_byte(crc32,3,1) 
-        data_buf[6] = word_to_byte(crc32,4,1) 
 
-        Write_to_serial_port(data_buf[0],1)
-        
-        for i in data_buf[1:COMMAND_BL_JMP_TO_USERAPP_DATALEN + NUMBER_OF_CONTROL_BYTES]:
-            Write_to_serial_port(i,COMMAND_BL_JMP_TO_USERAPP_DATALEN + NUMBER_OF_CONTROL_BYTES -1)
+        apply_4byte_crc(data_buf, COMMAND_BL_JMP_TO_USERAPP_DATALEN + NUMBER_OF_HEADER_BYTES)
+
+        Write_to_serial_port(data_buf, COMMAND_BL_JMP_TO_USERAPP_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
         ret_value = read_bootloader_reply(data_buf[1])
 
@@ -514,16 +489,10 @@ def decode_menu_command_code(command):
         print("\n   Command == > COMMAND_BL_DIS_R_W_PROTECT")
         data_buf[0] = COMMAND_BL_DIS_R_W_PROTECT_DATALEN-1 
         data_buf[1] = COMMAND_BL_DIS_R_W_PROTECT 
-        crc32       = get_crc(data_buf,COMMAND_BL_DIS_R_W_PROTECT_DATALEN-4) 
-        data_buf[2] = word_to_byte(crc32,1,1) 
-        data_buf[3] = word_to_byte(crc32,2,1) 
-        data_buf[4] = word_to_byte(crc32,3,1) 
-        data_buf[5] = word_to_byte(crc32,4,1) 
 
-        Write_to_serial_port(data_buf[0],1)
+        apply_4byte_crc(data_buf, COMMAND_BL_DIS_R_W_PROTECT_DATALEN + NUMBER_OF_HEADER_BYTES)
         
-        for i in data_buf[1:COMMAND_BL_DIS_R_W_PROTECT_DATALEN]:
-            Write_to_serial_port(i,COMMAND_BL_DIS_R_W_PROTECT_DATALEN-1)
+        Write_to_serial_port(data_buf, COMMAND_BL_DIS_R_W_PROTECT_DATALEN)
         
         ret_value = read_bootloader_reply(data_buf[1])
         
@@ -537,21 +506,18 @@ def decode_menu_command_code(command):
         return
 
 def read_bootloader_reply(command_code):
-    #ack=[0,0]
     len_to_follow=0 
     ret = -2 
 
-    #read_serial_port(ack,2)
-    #ack = ser.read(2)
     ack=read_serial_port(3)
     if(len(ack)):
         a_array=bytearray(ack)
-        #print("read uart:",ack) 
+         
         if (a_array[1]== 0xAA):
             #CRC of last command was good .. received ACK and "len to follow"
             len_to_follow=a_array[2]
             print("\n   CRC : SUCCESS Len :",len_to_follow)
-            #print("command_code:",hex(command_code))
+            
             if (command_code) == COMMAND_BL_GET_VER :
                 process_COMMAND_BL_GET_VER(len_to_follow)
                                 
@@ -593,7 +559,12 @@ def read_bootloader_reply(command_code):
         
     return ret
 
-            
+def apply_4byte_crc(data_buf, len):
+    crc32       = get_crc(data_buf, len) 
+    data_buf[len] = word_to_byte(crc32,1,1) 
+    data_buf[len + 1] = word_to_byte(crc32,2,1) 
+    data_buf[len + 2] = word_to_byte(crc32,3,1) 
+    data_buf[len + 3] = word_to_byte(crc32,4,1) 
             
 
 #----------------------------- Ask Menu implementation----------------------------------------
@@ -606,8 +577,6 @@ if(ret < 0):
     decode_menu_command_code(0)
     
 
-    
-  
 while True:
     print("\n +==========================================+")
     print(" |               Menu                       |")
@@ -637,14 +606,6 @@ while True:
     input("\n   Press any key to continue  :")
     purge_serial_port()
 
-
-
-
-
-    
-
-def check_flash_status():
-    pass
 
 def protection_type():
     pass
