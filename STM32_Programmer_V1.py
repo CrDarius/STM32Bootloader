@@ -39,7 +39,7 @@ COMMAND_BL_GET_RDP_STATUS_DATALEN           = 0
 COMMAND_BL_FLASH_ERASE_DATALEN              = 1
 COMMAND_BL_MEM_WRITE_DATALEN                = 0
 COMMAND_BL_GET_RW_SECTOR_PROT_DATALEN       = 0
-COMMAND_BL_SET_RW_SECTOR_PROT_DATALEN       = 0
+COMMAND_BL_SET_RW_SECTOR_PROT_DATALEN       = 2
 COMMAND_BL_JMP_TO_USERAPP_DATALEN           = 0
 
 
@@ -216,45 +216,7 @@ def process_COMMAND_BL_MEM_WRITE(length):
                 print("\n SECTOR: ", i, "ERASED")
     else:
         print("\n Block successfully programmed")
-        
-        
-    
-    
-protection_mode= [ "Write Protection", "Read/Write Protection","No protection" ]
-def protection_type(status,n):
-    if( status & (1 << 15) ):
-        #PCROP is active
-        if(status & (1 << n) ):
-            return protection_mode[1]
-        else:
-            return protection_mode[2]
-    else:
-        if(status & (1 << n)):
-            return protection_mode[2]
-        else:
-            return protection_mode[0]
             
-        
-        
-        
-def process_COMMAND_BL_READ_SECTOR_STATUS(length):
-    s_status=0
-
-    value = read_serial_port(length)
-    s_status = bytearray(value)
-    print("\n   Sector Status : ",s_status[0])
-    print("\n  ====================================")
-    print("\n  Sector                               \tProtection") 
-    print("\n  ====================================")
-    if(s_status[0] & (1 << 15)):
-        #PCROP is active
-        print("\n  Flash protection mode : Read/Write Protection(PCROP)\n")
-    else:
-        print("\n  Flash protection mode :   \tWrite Protection\n")
-
-    for x in range(NUMBER_OF_TARGET_FLASH_SECTORS):
-        print("\n   Sector{0}                               {1}".format(x,protection_type(s_status[0],x) ) )
-        
 
 def process_COMMAND_BL_GET_RW_SECTOR_PROT(length):
     value = read_serial_port(length)
@@ -268,6 +230,9 @@ def process_COMMAND_BL_GET_RW_SECTOR_PROT(length):
             print(f"\n Sector {i}: NoProtection")
         else:
             print(f"\n Sector {i}: ERROR")
+
+def process_COMMAND_BL_SET_RW_SECTOR_PROT(length):
+    print("\n Flash sectors protection has been successfully set")
 
 def process_COMMAND_BL_JMP_TO_USERAPP(length):
     print("\n   ###Jumping to user application###")
@@ -295,7 +260,7 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf, COMMAND_BL_GET_VER_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
-        ret_value = read_bootloader_reply(data_buf[1])
+        ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
         
     elif(command == 2):
         print("\n   Command == > BL_GET_CID")
@@ -308,7 +273,7 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf, COMMAND_BL_GET_CID_DATALEN + NUMBER_OF_CONTROL_BYTES)
 
-        ret_value = read_bootloader_reply(data_buf[1])
+        ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
 
     elif(command == 3):
         print("\n   Command == > BL_GET_RDP_STATUS")
@@ -321,7 +286,7 @@ def decode_menu_command_code(command):
         
         Write_to_serial_port(data_buf, COMMAND_BL_GET_RDP_STATUS_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
-        ret_value = read_bootloader_reply(data_buf[1])
+        ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
     
     elif(command == 4):
         print("\n   Command == > BL_FLASH_ERASE")
@@ -337,7 +302,7 @@ def decode_menu_command_code(command):
 
         Write_to_serial_port(data_buf, COMMAND_BL_FLASH_ERASE_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
-        ret_value = read_bootloader_reply(data_buf[1])
+        ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
 
     elif(command == 5):
             #../UserApp_Bootloader/bin/binary.bin
@@ -368,7 +333,7 @@ def decode_menu_command_code(command):
             Write_to_serial_port(data_buf, len(file_len_byte_aray) + NUMBER_OF_CONTROL_BYTES)
 
             #Wait to receive the ack containing the sectors to be erased
-            ret_value = read_bootloader_reply(data_buf[1])
+            ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
             if(ret_value != 0):
                 print("\n Error. Host did not receive the sectors to be erased!!")
                 return
@@ -377,7 +342,7 @@ def decode_menu_command_code(command):
             mem_write_active = 1
 
             #Wait to receive the confirmation that the sectors have been erased
-            ret_value = read_bootloader_reply(data_buf[1])
+            ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
             if(ret_value != 0):
                 print("\n Error. Bootloader did not erase the sectors successfuly!!")
                 return
@@ -415,7 +380,7 @@ def decode_menu_command_code(command):
                 bytes_remaining = t_len_of_file - bytes_so_far_sent
                 print("\n   bytes_so_far_sent:{0} -- bytes_remaining:{1}\n".format(bytes_so_far_sent,bytes_remaining)) 
 
-                ret_value = read_bootloader_reply(data_buf[1])
+                ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
                 if(ret_value != 0):
                     print("\n Bootloader did not manage to flash this block!")
                 
@@ -423,34 +388,52 @@ def decode_menu_command_code(command):
             
     
     elif(command == 6):
-        #To be implemented next : Set the protection level of each setot to WProtection, RWProtection or NoProtection
-        pass
+        print("\n   Command == > COMMAND_BL_SET_RW_SECTOR_PROT")
+        FRAME_TYPE = LAST_FRAME
+        data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+        data_buf[POS_COMMAND] = COMMAND_BL_SET_RW_SECTOR_PROT
+        data_buf[POS_DATALEN] = COMMAND_BL_SET_RW_SECTOR_PROT_DATALEN
+
+        #Take as input the protection type: ReadWriteProtection / WriteProtection / NoProtection
+        protection_type = input("\n Enter the protection type of the sectors:\n 1 --> WriteProtection\n 2 --> ReadWriteProtection\n ")
+        sector_protection = input("\n Enter the sectors protection as one byte bit mask (Ex: 11111100 -> Protection active for [Sector 2, Sector 7]): ")
+        sector_protection = int(sector_protection, 2)
+        protection_type = int(protection_type)
+        data_buf[POS_DATALEN + 1] = protection_type
+        data_buf[POS_DATALEN + 2] = sector_protection
+
+        apply_4byte_crc(data_buf, COMMAND_BL_SET_RW_SECTOR_PROT_DATALEN + NUMBER_OF_HEADER_BYTES)
+
+        Write_to_serial_port(data_buf, COMMAND_BL_SET_RW_SECTOR_PROT_DATALEN + NUMBER_OF_CONTROL_BYTES)
+
+        ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
+        
 
     elif(command == 7):
         print("\n   Command == > COMMAND_BL_GET_RW_SECTOR_PROT")
         FRAME_TYPE  = LAST_FRAME
-        data_buf[0] = FRAME_TYPE
-        data_buf[1] = COMMAND_BL_GET_RW_SECTOR_PROT
-        data_buf[2] = COMMAND_BL_GET_RW_SECTOR_PROT_DATALEN
+        data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+        data_buf[POS_COMMAND] = COMMAND_BL_GET_RW_SECTOR_PROT
+        data_buf[POS_DATALEN] = COMMAND_BL_GET_RW_SECTOR_PROT_DATALEN
 
         apply_4byte_crc(data_buf, COMMAND_BL_GET_RW_SECTOR_PROT_DATALEN + NUMBER_OF_HEADER_BYTES)
 
         Write_to_serial_port(data_buf, COMMAND_BL_GET_RW_SECTOR_PROT_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
-        ret_value = read_bootloader_reply(data_buf[1])
+        ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
 
     elif(command == 8):
         print("\n   Command == > COMMAND_BL_JMP_TO_USERAPP")
         FRAME_TYPE  = LAST_FRAME
-        data_buf[0] = FRAME_TYPE
-        data_buf[1] = COMMAND_BL_JMP_TO_USERAPP
-        data_buf[2] = COMMAND_BL_JMP_TO_USERAPP_DATALEN
+        data_buf[POS_FRAME_TYPE] = FRAME_TYPE
+        data_buf[POS_COMMAND] = COMMAND_BL_JMP_TO_USERAPP
+        data_buf[POS_DATALEN] = COMMAND_BL_JMP_TO_USERAPP_DATALEN
 
         apply_4byte_crc(data_buf, COMMAND_BL_JMP_TO_USERAPP_DATALEN + NUMBER_OF_HEADER_BYTES)
 
         Write_to_serial_port(data_buf, COMMAND_BL_JMP_TO_USERAPP_DATALEN + NUMBER_OF_CONTROL_BYTES)
         
-        ret_value = read_bootloader_reply(data_buf[1])
+        ret_value = read_bootloader_reply(data_buf[POS_COMMAND])
         
     else:
         print("\n   Please input valid command code\n")
@@ -491,6 +474,9 @@ def read_bootloader_reply(command_code):
 
             elif(command_code == COMMAND_BL_GET_RW_SECTOR_PROT):
                 process_COMMAND_BL_GET_RW_SECTOR_PROT(len_to_follow)
+
+            elif(command_code == COMMAND_BL_SET_RW_SECTOR_PROT):
+                process_COMMAND_BL_SET_RW_SECTOR_PROT(len_to_follow)
 
             elif(command_code == COMMAND_BL_JMP_TO_USERAPP) :
                 process_COMMAND_BL_JMP_TO_USERAPP(len_to_follow)
@@ -557,7 +543,4 @@ while True:
     input("\n   Press any key to continue  :")
     purge_serial_port()
 
-
-def protection_type():
-    pass
 

@@ -19,7 +19,9 @@
 #define CMD_CODE_BOOT_READ_FLASH_PROT_STATUS        0x60u
 #define CMD_CODE_BOOT_GET_FLASH_RW_PROT             0x70u
 #define CMD_CODE_BOOT_JUMP_TO_APP                   0x80u
-#define CMD_CODE_BOOT_DISABLE_FLASH_PROT            0x90u
+#define CMD_CODE_BOOT_SET_FLASH_RW_PROT             0x90u
+
+#define CMD_CODE_BOOT_SET_FLASH_RW_PROT_DATALEN     2u
 
 
 extern const uint8_t NUMBER_OF_COMMANDS;
@@ -53,5 +55,5 @@ OperationStatus_t BootFlashWrite(uint8_t *buffer, uint8_t dataLength, FrameType_
 OperationStatus_t BootFlashVerify(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
 OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
 OperationStatus_t BootGetRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
-OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
+OperationStatus_t BootSetRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);
 OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType);

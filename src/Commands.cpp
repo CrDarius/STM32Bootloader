@@ -60,8 +60,8 @@ Commands_t serviceTable[] =
 
     /* Disable Flash Memory Protection */
     {
-        CMD_CODE_BOOT_DISABLE_FLASH_PROT,
-        BootDisableProt
+        CMD_CODE_BOOT_SET_FLASH_RW_PROT,
+        BootSetRWProt
     }
 };
 
@@ -268,29 +268,74 @@ OperationStatus_t BootReadFlashProtStatus(uint8_t *buffer, uint8_t dataLength, F
 OperationStatus_t BootGetRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
     PARAM_UNUSED(frameType);
+    OperationStatus_t retVal = ST_OK;
+    Flash_ProtLevel_t prot;
     dataLength = FLASH_NUMBER_OF_SECTORS;
 
     for(uint8_t sector = SECTOR0; sector <= SECTOR7; sector++)
     {
-        buffer[DATA_POS + sector] = FLASH::GetSectorRWProtection(sector);
+        retVal = FLASH::GetSectorRWProtection(sector, prot);
+        buffer[DATA_POS + sector] = prot;
+        if(retVal != ST_OK)
+            break;
     }
 
-    dataLength += NUMBER_CONTROL_BYTES;
+    if(retVal == ST_OK)
+    {
+        dataLength += NUMBER_CONTROL_BYTES;
+        buffer[CMD_POS] = CMD_CODE_BOOT_GET_FLASH_RW_PROT;
+        buffer[RESP_POS] = POSITIVE_RESP;
+        buffer[LEN_POS] = dataLength;
+        USART2.Transmit((const char*)buffer, dataLength, MAX_DELAY);
+    }
+    else
+    {
 
-    buffer[CMD_POS] = CMD_CODE_BOOT_GET_FLASH_RW_PROT;
-    buffer[RESP_POS] = POSITIVE_RESP;
-    buffer[LEN_POS] = dataLength;
-    USART2.Transmit((const char*)buffer, dataLength, MAX_DELAY);
+        dataLength = 0;
+        buffer[CMD_POS] = CMD_CODE_BOOT_GET_FLASH_RW_PROT;
+        buffer[RESP_POS] = NEGATIVE_RESP;
+        buffer[LEN_POS] = dataLength;
+        USART2.Transmit((const char*)buffer, dataLength, MAX_DELAY);
+    }
 
-    return ST_OK;
+    return retVal;
 }
 
-OperationStatus_t BootDisableProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
+OperationStatus_t BootSetRWProt(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)
 {
-    PARAM_UNUSED(buffer);
-    PARAM_UNUSED(dataLength);
     PARAM_UNUSED(frameType);
-    return ST_OK;
+    OperationStatus_t retVal = ST_OK;
+    uint8_t protectionMode = 0;
+    uint8_t sectorBitMask = 0;
+
+    protectionMode = buffer[0];
+    sectorBitMask = buffer[1];
+
+    retVal = FLASH::SetFlashProtectionMode((Flash_ProtMode_t)protectionMode);
+    if(retVal == ST_OK)
+    {
+        retVal = FLASH::SetSectorRWProtection(sectorBitMask);
+    }
+    
+    if(retVal == ST_OK)
+    {
+        dataLength = 0;
+        buffer[CMD_POS] = CMD_CODE_BOOT_GET_FLASH_RW_PROT;
+        buffer[RESP_POS] = POSITIVE_RESP;
+        buffer[LEN_POS] = dataLength;
+        USART2.Transmit((const char*)buffer, NUMBER_CONTROL_BYTES, MAX_DELAY);
+    }
+    else
+    {
+
+        dataLength = 0;
+        buffer[CMD_POS] = CMD_CODE_BOOT_GET_FLASH_RW_PROT;
+        buffer[RESP_POS] = NEGATIVE_RESP;
+        buffer[LEN_POS] = dataLength;
+        USART2.Transmit((const char*)buffer, NUMBER_CONTROL_BYTES, MAX_DELAY);
+    }
+
+    return retVal;
 }
 
 OperationStatus_t BootJumpToApplication(uint8_t *buffer, uint8_t dataLength, FrameType_t frameType)

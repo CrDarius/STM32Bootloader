@@ -44,6 +44,39 @@ OperationStatus_t FLASH::LockControlRegister()
     return retVal;
 }
 
+OperationStatus_t FLASH::UnlockOptionControlRegister()
+{
+    OperationStatus_t retVal = ST_OK;
+    if((FLASH::GetOPStatus() == FLASH_OP_FREE))
+    {   
+        FLASH::registers->FLASH_OPTKEYR = FLASH_OPTKEY1;
+        FLASH::registers->FLASH_OPTKEYR = FLASH_OPTKEY2;
+    }
+    else
+    {
+        retVal = ST_BUSY;
+    }
+    
+    return retVal;
+}
+
+OperationStatus_t FLASH::LockOptionControlRegister()
+{
+    
+    OperationStatus_t retVal = ST_OK;
+
+    if( (FLASH::GetOPStatus() == FLASH_OP_FREE) )
+    {
+        FLASH::registers->FLASH_OPTCR |= (1u << FLASH_OPTCR_BitPos::OPTLOCK);
+    }
+    else
+    {
+        retVal = ST_BUSY;
+    }
+
+    return retVal;
+}
+
 OperationStatus_t FLASH::MassErase()
 {
     OperationStatus_t retVal = ST_OK;
@@ -270,22 +303,77 @@ void FLASH::ReadProtOptionBytes(uint8_t& status)
     status = (uint8_t)(*((uint32_t*)FLASH_OPTION_BYTES_ADDRESS) >> 8u);
 }
 
-Flash_ProtLevel_t FLASH::GetSectorRWProtection(const uint8_t& sector)
+OperationStatus_t FLASH::GetSectorRWProtection(const uint8_t& sector, Flash_ProtLevel_t& prot)
 {
-    Flash_ProtLevel_t prot = NO_PROTECTION;
-    if(FLASH::registers->FLASH_OPTCR & (1u << FLASH_OPTCR_BitPos::SPRMOD))
+    OperationStatus_t retVal = ST_OK;
+    prot = NO_PROTECTION;
+
+    if(FLASH::currentState == FLASH_AVAILABLE)
     {
-        if(FLASH::registers->FLASH_OPTCR & (1u << (FLASH_OPTCR_BitPos::nWRP + sector)) ) 
+        FLASH::currentState = FLASH_BUSY;
+
+        if(FLASH::registers->FLASH_OPTCR & (1u << FLASH_OPTCR_BitPos::SPRMOD))
         {
-            prot = RW_PROTECTION;
+            if(FLASH::registers->FLASH_OPTCR & (1u << (FLASH_OPTCR_BitPos::nWRP + sector)) ) 
+            {
+                prot = RW_PROTECTION;
+            }
         }
+        else if( !(FLASH::registers->FLASH_OPTCR & (1u << (FLASH_OPTCR_BitPos::nWRP + sector))) )
+        {
+            prot = W_PROTECTION;
+        }
+        
+        FLASH::currentState = FLASH_AVAILABLE;
     }
-    else if( !(FLASH::registers->FLASH_OPTCR & (1u << (FLASH_OPTCR_BitPos::nWRP + sector))) )
+    else
     {
-        prot = W_PROTECTION;
+        retVal = ST_BUSY;
     }
 
-    return prot;
+    return retVal;
+}
+
+OperationStatus_t FLASH::SetSectorRWProtection(const uint8_t& sectorsBitMask)
+{
+    OperationStatus_t retVal = ST_OK;
+
+    if( (FLASH::currentState == FLASH_AVAILABLE) && (FLASH::GetOPStatus() == FLASH_OP_FREE) )
+    {
+        FLASH::currentState = FLASH_BUSY;
+
+        (void)FLASH::UnlockOptionControlRegister();
+        Flash_ProtMode_t protectionMode;
+        FLASH::GetFlashProtectionMode(protectionMode);
+        if(protectionMode == WRITE_PROTECTION)
+        {
+            for(uint8_t sectorIdx = SECTOR0; sectorIdx < FLASH_NUMBER_OF_SECTORS; sectorIdx++)
+            {
+                (sectorsBitMask & (1u << sectorIdx))?
+                    FLASH::registers->FLASH_OPTCR &= ~(1u << (FLASH_OPTCR_BitPos::nWRP + sectorIdx)):
+                    FLASH::registers->FLASH_OPTCR |= (1u << (FLASH_OPTCR_BitPos::nWRP + sectorIdx));
+            }
+        }
+        else
+        {
+            for(uint8_t sectorIdx = SECTOR0; sectorIdx < FLASH_NUMBER_OF_SECTORS; sectorIdx++)
+            {
+                (sectorsBitMask & (1u << sectorIdx))?
+                    FLASH::registers->FLASH_OPTCR |= (1u << (FLASH_OPTCR_BitPos::nWRP + sectorIdx)):
+                    FLASH::registers->FLASH_OPTCR &= ~(1u << (FLASH_OPTCR_BitPos::nWRP + sectorIdx));
+            }
+        }
+
+        (void)FLASH::LockOptionControlRegister();
+        
+        FLASH::currentState = FLASH_AVAILABLE;
+    }
+    else
+    {
+        retVal = ST_BUSY;
+    }
+
+    return retVal;
 }
 
 void FLASH::Config(Flash_option_t prefetch, Flash_latency_t latency, Flash_parallel_t paralellism)
@@ -300,4 +388,58 @@ void FLASH::Init()
     FLASH::registers->FLASH_ACR |= (latency << FLASH_ACR_BitPos::LATENCY);
     FLASH::registers->FLASH_ACR |= (prefetch << FLASH_ACR_BitPos::PRFTEN);
     FLASH::currentState = FLASH_AVAILABLE;
+}
+
+OperationStatus_t FLASH::SetFlashProtectionMode(const Flash_ProtMode_t& protectionMode)
+{
+    OperationStatus_t retVal = ST_OK;
+
+    /* Check that no operation is ongoing */
+    if( (FLASH::currentState == FLASH_AVAILABLE) && (FLASH::GetOPStatus() == FLASH_OP_FREE) )
+    {
+        FLASH::currentState = FLASH_BUSY;
+
+        retVal = FLASH::UnlockOptionControlRegister();
+        if(retVal == ST_OK)
+        {
+            (protectionMode == WRITE_PROTECTION) ? 
+            (FLASH::registers->FLASH_OPTCR &= ~(1u << FLASH_OPTCR_BitPos::SPRMOD)): 
+            (FLASH::registers->FLASH_OPTCR |=  (1u << FLASH_OPTCR_BitPos::SPRMOD));
+
+            /* Wait for operation to complete */
+            while(FLASH::GetOPStatus() != FLASH_OP_FREE){}
+
+            retVal = FLASH::LockOptionControlRegister();
+        }
+        else
+        {
+            retVal = ST_BUSY;
+        }
+
+        FLASH::currentState = FLASH_AVAILABLE;
+    }
+    else
+    {
+        retVal = ST_BUSY;
+    }
+
+    return retVal;
+}
+
+OperationStatus_t FLASH::GetFlashProtectionMode(Flash_ProtMode_t& protectionMode)
+{
+    OperationStatus_t retVal = ST_OK;
+
+    if(FLASH::GetOPStatus() == FLASH_OP_FREE)
+    {
+        (FLASH::registers->FLASH_OPTCR & (1u << FLASH_OPTCR_BitPos::SPRMOD)) ?
+            protectionMode = PROPRIETARY_PROTECTION:
+            protectionMode = WRITE_PROTECTION; 
+    }
+    else
+    {
+        retVal = ST_BUSY;
+    }
+
+    return retVal;
 }

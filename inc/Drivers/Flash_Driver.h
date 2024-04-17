@@ -124,6 +124,12 @@ typedef enum
     NO_PROTECTION = 0xFF
 }Flash_ProtLevel_t;
 
+typedef enum
+{
+    WRITE_PROTECTION,
+    PROPRIETARY_PROTECTION
+}Flash_ProtMode_t;
+
 struct FLASH
 {
 private:
@@ -138,6 +144,8 @@ private:
     FLASH() = default;
     static OperationStatus_t LockControlRegister(void);
     static OperationStatus_t UnlockControlRegister(void);
+    static OperationStatus_t LockOptionControlRegister(void);
+    static OperationStatus_t UnlockOptionControlRegister(void);
     static FlashOP_state_t GetOPStatus(void);
 
 public:
@@ -147,7 +155,10 @@ public:
     static OperationStatus_t MassErase(void);
     static OperationStatus_t SectorErase(const uint8_t& sectorsBitMask);
     static OperationStatus_t WriteFlash(const void* src, void* dest, uint32_t length);
-    static Flash_ProtLevel_t GetSectorRWProtection(const uint8_t& sector);
+    static OperationStatus_t SetFlashProtectionMode(const Flash_ProtMode_t& protectionMode);
+    static OperationStatus_t GetFlashProtectionMode(Flash_ProtMode_t& protectionMode);
+    static OperationStatus_t GetSectorRWProtection(const uint8_t& sector, Flash_ProtLevel_t& prot);
+    static OperationStatus_t SetSectorRWProtection(const uint8_t& sector);
     static void ReadProtOptionBytes(uint8_t& status);
     static void Config(Flash_option_t prefetch, Flash_latency_t latency, Flash_parallel_t paralellism);
     static void Init(void);
